@@ -1,0 +1,1 @@
+config:x86:x86_32:generic:cygwin:gcc 3.4.4 (cygming special, gdc 0.12, using dmd 0.125): --disable-yasm

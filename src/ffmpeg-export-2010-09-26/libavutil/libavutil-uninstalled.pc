@@ -1,0 +1,12 @@
+prefix=
+exec_prefix=
+libdir=${pcfiledir}
+includedir=/home/jiangyuanli/ffmpeg/ffmpeg-export-2010-09-26-win32
+
+Name: libavutil
+Description: FFmpeg utility library
+Version: 50.28.0
+Requires: 
+Conflicts:
+Libs: ${libdir}/libavutil.a 
+Cflags: -I${includedir}
