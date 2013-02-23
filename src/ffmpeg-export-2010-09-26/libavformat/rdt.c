@@ -549,6 +549,18 @@ rdt_free_context (PayloadContext *rdt)
     av_free(rdt);
 }
 
+#if defined(_MSC_VER)
+#define RDT_HANDLER(n, s, t) \
+static RTPDynamicProtocolHandler ff_rdt_ ## n ## _handler = { \
+	/*.enc_name         = */s, \
+	/*.codec_type       = */t, \
+	/*.codec_id         = */CODEC_ID_NONE, \
+	/*.parse_sdp_a_line = */rdt_parse_sdp_line, \
+	/*.open             = */rdt_new_context, \
+	/*.close            = */rdt_free_context, \
+	/*.parse_packet     = */rdt_parse_packet \
+};
+#else
 #define RDT_HANDLER(n, s, t) \
 static RTPDynamicProtocolHandler ff_rdt_ ## n ## _handler = { \
     .enc_name         = s, \
@@ -559,6 +571,7 @@ static RTPDynamicProtocolHandler ff_rdt_ ## n ## _handler = { \
     .close            = rdt_free_context, \
     .parse_packet     = rdt_parse_packet \
 };
+#endif
 
 RDT_HANDLER(live_video, "x-pn-multirate-realvideo-live", AVMEDIA_TYPE_VIDEO);
 RDT_HANDLER(live_audio, "x-pn-multirate-realaudio-live", AVMEDIA_TYPE_AUDIO);

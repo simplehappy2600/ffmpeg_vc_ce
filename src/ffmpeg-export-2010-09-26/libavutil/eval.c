@@ -29,6 +29,10 @@
 #include "libavutil/avutil.h"
 #include "eval.h"
 
+#ifdef MS_PORT
+#define isnan(val)      (0)
+#endif
+
 typedef struct Parser {
     const AVClass *class;
     int stack_index;
@@ -48,6 +52,65 @@ typedef struct Parser {
 
 static const AVClass class = { "Eval", av_default_item_name, NULL, LIBAVUTIL_VERSION_INT, offsetof(Parser,log_offset), offsetof(Parser,log_ctx) };
 
+#ifdef _MSC_VER
+static const int8_t si_prefixes['z' - 'E' + 1] = {
+	18,
+	0,
+	9,
+	0,
+	0,
+	0,
+	3,
+	0,
+	6,
+	0,
+	0,
+	15,
+	0,
+	0,
+	0,
+	12,
+	0,
+	0,
+	0,
+	0,
+	24,
+	21,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	-18,
+	0,
+	-2,
+	-1,
+	0,
+	-15,
+	0,
+	2,
+	0,
+	0,
+	3,
+	0,
+	-3,
+	-9,
+	0,
+	-12,
+	0,
+	0,
+	0,
+	0,
+	-6,
+	0,
+	0,
+	0,
+	-24,
+	-21
+};
+
+#else
 static const int8_t si_prefixes['z' - 'E' + 1] = {
     ['y'-'E']= -24,
     ['z'-'E']= -21,
@@ -70,6 +133,7 @@ static const int8_t si_prefixes['z' - 'E' + 1] = {
     ['Z'-'E']=  21,
     ['Y'-'E']=  24,
 };
+#endif
 
 double av_strtod(const char *numstr, char **tail)
 {
@@ -142,7 +206,7 @@ static double eval_expr(Parser *p, AVExpr *e)
         case e_gauss: { double d = eval_expr(p, e->param[0]); return exp(-d*d/2)/sqrt(2*M_PI); }
         case e_ld:     return e->value * p->var[av_clip(eval_expr(p, e->param[0]), 0, VARS-1)];
         case e_while: {
-            double d = NAN;
+			double d = 0;
             while (eval_expr(p, e->param[0]))
                 d=eval_expr(p, e->param[1]);
             return d;
@@ -165,8 +229,8 @@ static double eval_expr(Parser *p, AVExpr *e)
                 case e_st : return e->value * (p->var[av_clip(d, 0, VARS-1)]= d2);
             }
         }
-    }
-    return NAN;
+    }    
+	return NAN;
 }
 
 static int parse_expr(AVExpr **e, Parser *p);

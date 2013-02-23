@@ -29,6 +29,10 @@
 #include "opt.h"
 #include "libavutil/eval.h"
 
+#ifdef MS_PORT
+#include "..\libavutil\libm.h"
+#endif
+
 //FIXME order them and do a bin search
 const AVOption *av_find_opt(void *v, const char *name, const char *unit, int mask, int flags){
     AVClass *c= *(AVClass**)v; //FIXME silly way of storing AVClass
@@ -69,8 +73,17 @@ static int av_set_number2(void *obj, const char *name, double num, int den, int6
     case FF_OPT_TYPE_FLOAT: *(float     *)dst= num*intnum/den;         break;
     case FF_OPT_TYPE_DOUBLE:*(double    *)dst= num*intnum/den;         break;
     case FF_OPT_TYPE_RATIONAL:
+#ifdef _MSC_VER
+		if((int)num == num) {
+			((AVRational*)dst)->num = num*intnum;
+			((AVRational*)dst)->den = den;
+		}
+		else                
+			*(AVRational*)dst= av_d2q(num*intnum/den, 1<<24);
+#else
         if((int)num == num) *(AVRational*)dst= (AVRational){num*intnum, den};
         else                *(AVRational*)dst= av_d2q(num*intnum/den, 1<<24);
+#endif
         break;
     default:
         return AVERROR(EINVAL);
@@ -248,7 +261,7 @@ const char *av_get_string(void *obj, const char *name, const AVOption **o_out, c
     switch(o->type){
     case FF_OPT_TYPE_FLAGS:     snprintf(buf, buf_len, "0x%08X",*(int    *)dst);break;
     case FF_OPT_TYPE_INT:       snprintf(buf, buf_len, "%d" , *(int    *)dst);break;
-    case FF_OPT_TYPE_INT64:     snprintf(buf, buf_len, "%"PRId64, *(int64_t*)dst);break;
+	case FF_OPT_TYPE_INT64:     snprintf(buf, buf_len, "%"PRId64, *(int64_t*)dst);break;
     case FF_OPT_TYPE_FLOAT:     snprintf(buf, buf_len, "%f" , *(float  *)dst);break;
     case FF_OPT_TYPE_DOUBLE:    snprintf(buf, buf_len, "%f" , *(double *)dst);break;
     case FF_OPT_TYPE_RATIONAL:  snprintf(buf, buf_len, "%d/%d", ((AVRational*)dst)->num, ((AVRational*)dst)->den);break;
@@ -304,8 +317,14 @@ AVRational av_get_q(void *obj, const char *name, const AVOption **o_out){
     int den=1;
 
     av_get_number(obj, name, o_out, &num, &den, &intnum);
-    if(num == 1.0 && (int)intnum == intnum)
+	if(num == 1.0 && (int)intnum == intnum){
+#ifdef _MSC_VER
+		AVRational tmp = {intnum, den};
+		return tmp;
+#else
         return (AVRational){intnum, den};
+#endif
+	}
     else
         return av_d2q(num*intnum/den, 1<<24);
 }

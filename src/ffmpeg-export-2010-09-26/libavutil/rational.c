@@ -43,7 +43,12 @@ int av_reduce(int *dst_num, int *dst_den, int64_t num, int64_t den, int64_t max)
         den = FFABS(den)/gcd;
     }
     if(num<=max && den<=max){
+#if defined(_MSC_VER)
+		a1.num = num;
+		a1.den = den;
+#else
         a1= (AVRational){num, den};
+#endif
         den=0;
     }
 
@@ -58,12 +63,22 @@ int av_reduce(int *dst_num, int *dst_den, int64_t num, int64_t den, int64_t max)
             if(a1.den) x= FFMIN(x, (max - a0.den) / a1.den);
 
             if (den*(2*x*a1.den + a0.den) > num*a1.den)
+#if defined(_MSC_VER)
+				a1.num = x*a1.num + a0.num;
+				a1.den = x*a1.den + a0.den;
+#else
                 a1 = (AVRational){x*a1.num + a0.num, x*a1.den + a0.den};
+#endif
             break;
         }
 
         a0= a1;
+#if defined(_MSC_VER)
+		a1.num = a2n;
+		a1.den = a2d;
+#else
         a1= (AVRational){a2n, a2d};
+#endif
         num= den;
         den= next_den;
     }
@@ -81,7 +96,14 @@ AVRational av_mul_q(AVRational b, AVRational c){
 }
 
 AVRational av_div_q(AVRational b, AVRational c){
+#if defined(_MSC_VER)
+	AVRational r;
+	r.num = c.den;
+	r.den = c.num;
+	return av_mul_q(b, r);
+#else
     return av_mul_q(b, (AVRational){c.den, c.num});
+#endif
 }
 
 AVRational av_add_q(AVRational b, AVRational c){
@@ -90,20 +112,40 @@ AVRational av_add_q(AVRational b, AVRational c){
 }
 
 AVRational av_sub_q(AVRational b, AVRational c){
-    return av_add_q(b, (AVRational){-c.num, c.den});
+#if defined(_MSC_VER)
+	AVRational r;
+	r.num = -c.num;
+	r.den = c.den;
+	return av_mul_q(b, r);
+#else
+	return av_add_q(b, (AVRational){-c.num, c.den});
+#endif    
 }
 
+#ifdef MS_PORT
 AVRational av_d2q(double d, int max){
-    AVRational a;
-#define LOG2  0.69314718055994530941723212145817656807550013436025
-    int exponent= FFMAX( (int)(log(fabs(d) + 1e-20)/LOG2), 0);
-    int64_t den= 1LL << (61 - exponent);
-    if (isnan(d))
-        return (AVRational){0,0};
-    av_reduce(&a.num, &a.den, (int64_t)(d * den + 0.5), den, max);
+	AVRational a;
+#define LOG2  (double)0.69314718055994530941723212145817656807550013436025
+	int exponent= FFMAX( (int)(log(fabs(d) + 1e-20)/LOG2), 0);
+	int64_t den= 1L << (61 - exponent);
+	av_reduce(&a.num, &a.den, (int64_t)(d * den + 0.5), den, max);
 
-    return a;
+	return a;
 }
+#else
+AVRational av_d2q(double d, int max){
+	AVRational a;
+#define LOG2  0.69314718055994530941723212145817656807550013436025
+	int exponent= FFMAX( (int)(log(fabs(d) + 1e-20)/LOG2), 0);
+	int64_t den= 1LL << (61 - exponent);
+	if (isnan(d))
+		return (AVRational){0,0};
+	av_reduce(&a.num, &a.den, (int64_t)(d * den + 0.5), den, max);
+
+	return a;
+}
+#endif
+
 
 int av_nearer_q(AVRational q, AVRational q1, AVRational q2)
 {

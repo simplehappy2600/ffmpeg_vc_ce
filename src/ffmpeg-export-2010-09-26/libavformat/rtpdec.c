@@ -56,6 +56,7 @@ void av_register_rtp_dynamic_payload_handlers(void)
 {
     ff_register_dynamic_payload_handler(&ff_mp4v_es_dynamic_handler);
     ff_register_dynamic_payload_handler(&ff_mpeg4_generic_dynamic_handler);
+#ifndef MS_PORT
     ff_register_dynamic_payload_handler(&ff_amr_nb_dynamic_handler);
     ff_register_dynamic_payload_handler(&ff_amr_wb_dynamic_handler);
     ff_register_dynamic_payload_handler(&ff_h263_1998_dynamic_handler);
@@ -70,6 +71,7 @@ void av_register_rtp_dynamic_payload_handlers(void)
 
     ff_register_dynamic_payload_handler(&ff_ms_rtp_asf_pfv_handler);
     ff_register_dynamic_payload_handler(&ff_ms_rtp_asf_pfa_handler);
+#endif
 }
 
 static int rtcp_parse_packet(RTPDemuxContext *s, const unsigned char *buf, int len)

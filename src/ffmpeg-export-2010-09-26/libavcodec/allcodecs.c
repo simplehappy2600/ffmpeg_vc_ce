@@ -26,24 +26,28 @@
 
 #include "avcodec.h"
 
+#if defined(_MSC_VER)
+AVRational AV_TIME_BASE_Q_TMP = {1, AV_TIME_BASE};
+#endif
+
 #define REGISTER_HWACCEL(X,x) { \
           extern AVHWAccel x##_hwaccel; \
-          if(CONFIG_##X##_HWACCEL) av_register_hwaccel(&x##_hwaccel); }
+          /*if(CONFIG_##X##_HWACCEL)*/ av_register_hwaccel(&x##_hwaccel); }
 
 #define REGISTER_ENCODER(X,x) { \
           extern AVCodec x##_encoder; \
-          if(CONFIG_##X##_ENCODER)  avcodec_register(&x##_encoder); }
+          /*if(CONFIG_##X##_ENCODER)*/  avcodec_register(&x##_encoder); }
 #define REGISTER_DECODER(X,x) { \
           extern AVCodec x##_decoder; \
-          if(CONFIG_##X##_DECODER)  avcodec_register(&x##_decoder); }
+          /*if(CONFIG_##X##_DECODER)*/  avcodec_register(&x##_decoder); }
 #define REGISTER_ENCDEC(X,x)  REGISTER_ENCODER(X,x); REGISTER_DECODER(X,x)
 
 #define REGISTER_PARSER(X,x) { \
           extern AVCodecParser x##_parser; \
-          if(CONFIG_##X##_PARSER)  av_register_codec_parser(&x##_parser); }
+          /*if(CONFIG_##X##_PARSER)*/  av_register_codec_parser(&x##_parser); }
 #define REGISTER_BSF(X,x) { \
           extern AVBitStreamFilter x##_bsf; \
-          if(CONFIG_##X##_BSF)     av_register_bitstream_filter(&x##_bsf); }
+          /*if(CONFIG_##X##_BSF)*/     av_register_bitstream_filter(&x##_bsf); }
 
 void avcodec_register_all(void)
 {
@@ -53,6 +57,11 @@ void avcodec_register_all(void)
         return;
     initialized = 1;
 
+#ifdef MS_PORT
+	REGISTER_DECODER  (MPEG4, mpeg4);
+	REGISTER_PARSER  (H263, h263);
+	REGISTER_PARSER  (MPEG4VIDEO, mpeg4video);
+#else
     /* hardware accelerators */
     REGISTER_HWACCEL (H263_VAAPI, h263_vaapi);
     REGISTER_HWACCEL (H264_DXVA2, h264_dxva2);
@@ -398,5 +407,6 @@ void avcodec_register_all(void)
     REGISTER_BSF     (NOISE, noise);
     REGISTER_BSF     (REMOVE_EXTRADATA, remove_extradata);
     REGISTER_BSF     (TEXT2MOVSUB, text2movsub);
+#endif
 }
 

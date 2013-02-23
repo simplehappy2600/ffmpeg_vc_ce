@@ -28,6 +28,16 @@
 #include "config.h"
 #include "attributes.h"
 
+#ifdef MS_PORT
+_inline long  rint(double x) 
+{ 
+	if(x >= 0.)
+		return (long)(x + 0.5); 
+	else 
+		return (long)(x - 0.5); 
+}
+#endif
+
 #if !HAVE_EXP2
 #undef exp2
 #define exp2(x) exp((x) * 0.693147180559945)

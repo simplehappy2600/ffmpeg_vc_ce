@@ -330,7 +330,9 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 avi->movi_list = url_ftell(pb) - 4;
                 if(size) avi->movi_end = avi->movi_list + size + (size & 1);
                 else     avi->movi_end = url_fsize(pb);
+#if !defined(_MSC_VER)
                 dprintf(NULL, "movi end=%"PRIx64"\n", avi->movi_end);
+#endif
                 goto end_of_header;
             }
             else if (tag1 == MKTAG('I', 'N', 'F', 'O'))
@@ -405,11 +407,13 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 av_freep(&s->streams[0]->codec);
                 av_freep(&s->streams[0]);
                 s->nb_streams = 0;
+#if CONFIG_DV_DEMUXER
                 if (CONFIG_DV_DEMUXER) {
                     avi->dv_demux = dv_init_demux(s);
                     if (!avi->dv_demux)
                         goto fail;
                 }
+#endif
                 s->streams[0]->priv_data = ast;
                 url_fskip(pb, 3 * 4);
                 ast->scale = get_le32(pb);
@@ -726,7 +730,13 @@ static int read_gab2_sub(AVStream *st, AVPacket *pkt) {
         size = bytestream_get_le32(&ptr);
         size = FFMIN(size, pkt->size+pkt->data-ptr);
 
+#if defined(_MSC_VER)
+		pd.buf = ptr;
+		pd.buf_size = size;
+		pd.filename = NULL;
+#else
         pd = (AVProbeData) { .buf = ptr, .buf_size = size };
+#endif
         if (!(sub_demuxer = av_probe_input_format2(&pd, 1, &score)))
             return 0;
 
@@ -796,11 +806,17 @@ static int avi_read_packet(AVFormatContext *s, AVPacket *pkt)
     int64_t i, sync;
     void* dstr;
 
+#if defined(_MSC_VER)
+	AVRational r1, r2;
+#endif
+
+#if CONFIG_DV_DEMUXER
     if (CONFIG_DV_DEMUXER && avi->dv_demux) {
         int size = dv_get_packet(avi->dv_demux, pkt);
         if (size >= 0)
             return size;
     }
+#endif
 
     if(avi->non_interleaved){
         int best_stream_index = 0;
@@ -822,7 +838,13 @@ static int avi_read_packet(AVFormatContext *s, AVPacket *pkt)
             if(!ast->remaining && ts > last_ts)
                 continue;
 
+#if defined(_MSC_VER)
+			r1.num = FFMAX(1, ast->sample_size);
+			r1.den = AV_TIME_BASE;
+			ts = av_rescale_q(ts, st->time_base, r1);
+#else
             ts = av_rescale_q(ts, st->time_base, (AVRational){FFMAX(1, ast->sample_size), AV_TIME_BASE});
+#endif
 
 //            av_log(s, AV_LOG_DEBUG, "%"PRId64" %d/%d %"PRId64"\n", ts, st->time_base.num, st->time_base.den, ast->frame_offset);
             if(ts < best_ts){
@@ -835,7 +857,13 @@ static int avi_read_packet(AVFormatContext *s, AVPacket *pkt)
             return -1;
 
         best_ast = best_st->priv_data;
+#if defined(_MSC_VER)
+		r2.num = FFMAX(1, best_ast->sample_size);
+		r2.den = AV_TIME_BASE;
+		best_ts = av_rescale_q(best_ts, r2, best_st->time_base);
+#else
         best_ts = av_rescale_q(best_ts, (AVRational){FFMAX(1, best_ast->sample_size), AV_TIME_BASE}, best_st->time_base);
+#endif
         if(best_ast->remaining)
             i= av_index_search_timestamp(best_st, best_ts, AVSEEK_FLAG_ANY | AVSEEK_FLAG_BACKWARD);
         else{
@@ -895,6 +923,7 @@ resync:
                 av_log(s, AV_LOG_ERROR, "Failed to append palette\n");
         }
 
+#if CONFIG_DV_DEMUXER
         if (CONFIG_DV_DEMUXER && avi->dv_demux) {
             dstr = pkt->destruct;
             size = dv_produce_packet(avi->dv_demux, pkt,
@@ -903,7 +932,9 @@ resync:
             pkt->flags |= AV_PKT_FLAG_KEY;
             if (size < 0)
                 av_free_packet(pkt);
-        } else if (st->codec->codec_type == AVMEDIA_TYPE_SUBTITLE
+        } else 
+#endif
+		if (st->codec->codec_type == AVMEDIA_TYPE_SUBTITLE
                    && !st->codec->codec_tag && read_gab2_sub(st, pkt)) {
             ast->frame_offset++;
             avi->stream_index = -1;
@@ -1227,7 +1258,7 @@ static int avi_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp
     timestamp = st->index_entries[index].timestamp / FFMAX(ast->sample_size, 1);
 
 //    av_log(s, AV_LOG_DEBUG, "XX %"PRId64" %d %"PRId64"\n", timestamp, index, st->index_entries[index].timestamp);
-
+#if CONFIG_DV_DEMUXER
     if (CONFIG_DV_DEMUXER && avi->dv_demux) {
         /* One and only one real stream for DV in AVI, and it has video  */
         /* offsets. Calling with other stream indexes should have failed */
@@ -1242,6 +1273,7 @@ static int avi_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp
         avi->stream_index= -1;
         return 0;
     }
+#endif
 
     for(i = 0; i < s->nb_streams; i++) {
         AVStream *st2 = s->streams[i];
@@ -1323,6 +1355,28 @@ static int avi_probe(AVProbeData *p)
     return 0;
 }
 
+#if defined(_MSC_VER)
+AVInputFormat avi_demuxer = {
+	"avi",
+	"AVI format",
+	sizeof(AVIContext),
+	avi_probe,
+	avi_read_header,
+	avi_read_packet,
+	avi_read_close,
+	avi_read_seek,
+	/*read_timestamp*/NULL,    
+	/*flags         */0,
+	/*extensions    */NULL,
+	/*value         */0,    
+	/*read_play     */NULL,
+	/*read_pause    */NULL,
+	/*codec_tag     */NULL,
+	/*read_seek2    */NULL,    
+	/*metadata_conv */ff_avi_metadata_conv,
+	/*next          */NULL
+};
+#else
 AVInputFormat avi_demuxer = {
     "avi",
     NULL_IF_CONFIG_SMALL("AVI format"),
@@ -1334,3 +1388,4 @@ AVInputFormat avi_demuxer = {
     avi_read_seek,
     .metadata_conv = ff_avi_metadata_conv,
 };
+#endif

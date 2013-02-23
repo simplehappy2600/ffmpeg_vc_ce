@@ -51,9 +51,24 @@
 #ifdef __MINGW32__
 #undef main /* We don't want SDL to override our main() */
 #endif
+#ifdef MS_PORT
+#undef main
+#endif
 
 #include <unistd.h>
 #include <assert.h>
+
+#ifdef MS_PORT
+#include "libavutil\libm.h"
+#include <WTYPES.H>
+#include <WINBASE.H>
+#include <Windows.h>
+
+void usleep(unsigned long usec)
+{
+	Sleep(usec/1000);
+}
+#endif
 
 const char program_name[] = "FFplay";
 const int program_birth_year = 2003;
@@ -237,11 +252,17 @@ static int frame_height = 0;
 static enum PixelFormat frame_pix_fmt = PIX_FMT_NONE;
 static int audio_disable;
 static int video_disable;
+#if defined(_MSC_VER) 
+static int wanted_stream[AVMEDIA_TYPE_NB]={
+	-1,-1,-1,-1,-1
+};
+#else
 static int wanted_stream[AVMEDIA_TYPE_NB]={
     [AVMEDIA_TYPE_AUDIO]=-1,
     [AVMEDIA_TYPE_VIDEO]=-1,
     [AVMEDIA_TYPE_SUBTITLE]=-1,
 };
+#endif
 static int seek_by_bytes=-1;
 static int display_disable;
 static int show_status = 1;
@@ -284,6 +305,22 @@ static AVPacket flush_pkt;
 #define FF_ALLOC_EVENT   (SDL_USEREVENT)
 #define FF_REFRESH_EVENT (SDL_USEREVENT + 1)
 #define FF_QUIT_EVENT    (SDL_USEREVENT + 2)
+
+#ifdef _MSC_VER
+int strcasecmp(char *s1, char *s2)
+{
+	while  (toupper((unsigned char)*s1) == toupper((unsigned char)*s2++))
+		if (*s1++ == '\0') return 0;
+	return(toupper((unsigned char)*s1) - toupper((unsigned char)*--s2));
+}
+
+int strncasecmp(char *s1, char *s2, register int n)
+{
+	while (--n >= 0 && toupper((unsigned char)*s1) == toupper((unsigned char)*s2++))
+		if (*s1++ == '\0')  return 0;
+	return(n < 0 ? 0 : toupper((unsigned char)*s1) - toupper((unsigned char)*--s2));
+}
+#endif
 
 static SDL_Surface *screen;
 
@@ -796,6 +833,8 @@ static void video_image_display(VideoState *is)
         rect.y = is->ytop  + y;
         rect.w = width;
         rect.h = height;
+
+
         SDL_DisplayYUVOverlay(vp->bmp, &rect);
     } else {
 #if 0
@@ -1026,7 +1065,11 @@ static int refresh_thread(void *opaque)
             is->refresh=1;
     SDL_PushEvent(&event);
         }
+#if defined(_MSC_VER)
+		Sleep(is->audio_st && is->show_audio ? rdftspeed*1 : 5); 	
+#else
         usleep(is->audio_st && is->show_audio ? rdftspeed*1000 : 5000); //FIXME ideally we should wait the correct time but SDLs event passing is so slow it would be silly
+#endif
     }
     return 0;
 }
@@ -1372,6 +1415,13 @@ static void alloc_picture(void *opaque)
     vp->width   = is->video_st->codec->width;
     vp->height  = is->video_st->codec->height;
     vp->pix_fmt = is->video_st->codec->pix_fmt;
+#endif
+
+#ifdef MS_PORT
+	if (!screen) {
+		fprintf(stderr, "Error: the video screen NULL");
+		do_exit();
+	}
 #endif
 
     vp->bmp = SDL_CreateYUVOverlay(vp->width, vp->height,
@@ -2466,7 +2516,12 @@ static int decode_thread(void *arg)
     ap->prealloced_context = 1;
     ap->width = frame_width;
     ap->height= frame_height;
+#ifdef _MSC_VER
+	ap->time_base.num = 1;
+	ap->time_base.den = 25;
+#else
     ap->time_base= (AVRational){1, 25};
+#endif
     ap->pix_fmt = frame_pix_fmt;
 
     set_context_opts(ic, avformat_opts, AV_OPT_FLAG_DECODING_PARAM);
@@ -2657,6 +2712,7 @@ static int decode_thread(void *arg)
         if (pkt->stream_index == is->audio_stream && pkt_in_play_range) {
             packet_queue_put(&is->audioq, pkt);
         } else if (pkt->stream_index == is->video_stream && pkt_in_play_range) {
+			//av_log(NULL, AV_LOG_INFO, "%4d", pkt->size);
             packet_queue_put(&is->videoq, pkt);
         } else if (pkt->stream_index == is->subtitle_stream && pkt_in_play_range) {
             packet_queue_put(&is->subtitleq, pkt);
@@ -3173,9 +3229,14 @@ int main(int argc, char **argv)
     sws_opts = sws_getContext(16,16,0, 16,16,0, sws_flags, NULL,NULL,NULL);
 #endif
 
-    show_banner();
+    show_banner();    
 
-    parse_options(argc, argv, options, opt_input_file);
+#ifdef WINCE
+	//input_filename = "Storage Card\\a.avi";
+	input_filename = "rtsp://192.168.18.3/12341234/31@192.168.1.61:1283149006997-192.168.1.88--74593096697959384515292775768197952234-416462294511393998057162867455695368374595394";
+#else
+	parse_options(argc, argv, options, opt_input_file);
+#endif
 
     if (!input_filename) {
         show_usage();
@@ -3188,7 +3249,7 @@ int main(int argc, char **argv)
         video_disable = 1;
     }
     flags = SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_TIMER;
-#if !defined(__MINGW32__) && !defined(__APPLE__)
+#if !defined(__MINGW32__) && !defined(__APPLE__) && !defined(_MSC_VER)
     flags |= SDL_INIT_EVENTTHREAD; /* Not supported on Windows or Mac OS X */
 #endif
     if (SDL_Init (flags)) {
@@ -3219,3 +3280,5 @@ int main(int argc, char **argv)
 
     return 0;
 }
+
+

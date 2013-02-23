@@ -141,6 +141,11 @@ int av_aes_init(AVAES *a, const uint8_t *key, int key_bits, int decrypt) {
     uint8_t  log8[256];
     uint8_t alog8[512];
 
+#ifdef _MSC_VER
+	const int tmp1[4] = {0xe, 0x9, 0xd, 0xb};
+	const int tmp2[4] = {0x2, 0x1, 0x1, 0x3};
+#endif
+
     if(!enc_multbl[FF_ARRAY_ELEMS(enc_multbl)-1][FF_ARRAY_ELEMS(enc_multbl[0])-1]){
         j=1;
         for(i=0; i<255; i++){
@@ -157,8 +162,13 @@ int av_aes_init(AVAES *a, const uint8_t *key, int key_bits, int decrypt) {
             inv_sbox[j]= i;
             sbox    [i]= j;
         }
+#ifdef _MSC_VER
+		init_multbl2(dec_multbl[0], tmp1, log8, alog8, inv_sbox);
+		init_multbl2(enc_multbl[0], tmp2, log8, alog8, sbox);
+#else
         init_multbl2(dec_multbl[0], (const int[4]){0xe, 0x9, 0xd, 0xb}, log8, alog8, inv_sbox);
         init_multbl2(enc_multbl[0], (const int[4]){0x2, 0x1, 0x1, 0x3}, log8, alog8, sbox);
+#endif
     }
 
     if(key_bits!=128 && key_bits!=192 && key_bits!=256)

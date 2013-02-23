@@ -22,7 +22,9 @@
 #include "libavutil/avstring.h"
 #include "avformat.h"
 #include <unistd.h>
+#ifndef _MSC_VER
 #include <strings.h>
+#endif
 #include "internal.h"
 #include "network.h"
 #include "http.h"
@@ -502,6 +504,22 @@ http_get_file_handle(URLContext *h)
     return url_get_file_handle(s->hd);
 }
 
+#ifdef _MSC_VER
+URLProtocol http_protocol = {
+	"http",
+	http_open,
+	http_read,
+	http_write,
+	http_seek,
+	http_close,
+	/*next*/NULL,
+	/*url_read_pause*/NULL,
+	/*url_read_seek*/NULL,
+	/*url_get_file_handle*/http_get_file_handle,
+	/*priv_data_size*/sizeof(HTTPContext),
+	/*priv_data_class*/&httpcontext_class
+};
+#else
 URLProtocol http_protocol = {
     "http",
     http_open,
@@ -513,3 +531,4 @@ URLProtocol http_protocol = {
     .priv_data_size = sizeof(HTTPContext),
     .priv_data_class = &httpcontext_class,
 };
+#endif

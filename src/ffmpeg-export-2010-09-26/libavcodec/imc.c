@@ -820,7 +820,28 @@ static av_cold int imc_decode_close(AVCodecContext * avctx)
     return 0;
 }
 
-
+#ifdef _MSC_VER
+AVCodec imc_decoder = {
+	/*name*/"imc",
+	/*type*/AVMEDIA_TYPE_AUDIO,
+	/*id*/CODEC_ID_IMC,
+	/*priv_data_size*/sizeof(IMCContext),
+	/*init*/imc_decode_init,
+	/*encode*/NULL,
+	/*close*/imc_decode_close,
+	/*decode*/imc_decode_frame,
+	/*capabilities*/0,
+	/*next*/NULL,
+	/*flush*/NULL,
+	/*supported_framerates*/NULL,
+	/*pix_fmts*/NULL,
+	/*long_name*/"IMC (Intel Music Coder)",
+	/*supported_samplerates*/NULL,
+	/*sample_fmts*/NULL,
+	/*channel_layouts*/NULL,
+	/*max_lowres*/0
+};
+#else
 AVCodec imc_decoder = {
     .name = "imc",
     .type = AVMEDIA_TYPE_AUDIO,
@@ -831,3 +852,4 @@ AVCodec imc_decoder = {
     .decode = imc_decode_frame,
     .long_name = NULL_IF_CONFIG_SMALL("IMC (Intel Music Coder)"),
 };
+#endif

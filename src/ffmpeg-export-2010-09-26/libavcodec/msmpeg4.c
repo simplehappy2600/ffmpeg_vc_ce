@@ -1918,6 +1918,28 @@ int ff_msmpeg4_decode_motion(MpegEncContext * s,
     return 0;
 }
 
+#ifdef _MSC_VER
+AVCodec msmpeg4v1_decoder = {
+	"msmpeg4v1",
+	AVMEDIA_TYPE_VIDEO,
+	CODEC_ID_MSMPEG4V1,
+	sizeof(MpegEncContext),
+	ff_msmpeg4_decode_init,
+	NULL,
+	ff_h263_decode_end,
+	ff_h263_decode_frame,
+	CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1,
+	/*next*/NULL,
+	/*flush*/NULL,
+	/*supported_framerates*/NULL,
+	/*pix_fmts*/ff_pixfmt_list_420,
+	/*long_name*/"MPEG-4 part 2 Microsoft variant version 1",
+	/*supported_samplerates*/NULL,
+	/*sample_fmts*/NULL,
+	/*channel_layouts*/NULL,
+	/*max_lowres*/3	
+};
+#else
 AVCodec msmpeg4v1_decoder = {
     "msmpeg4v1",
     AVMEDIA_TYPE_VIDEO,
@@ -1932,7 +1954,30 @@ AVCodec msmpeg4v1_decoder = {
     .long_name= NULL_IF_CONFIG_SMALL("MPEG-4 part 2 Microsoft variant version 1"),
     .pix_fmts= ff_pixfmt_list_420,
 };
+#endif
 
+#ifdef _MSC_VER
+AVCodec msmpeg4v2_decoder = {
+	"msmpeg4v2",
+	AVMEDIA_TYPE_VIDEO,
+	CODEC_ID_MSMPEG4V2,
+	sizeof(MpegEncContext),
+	ff_msmpeg4_decode_init,
+	NULL,
+	ff_h263_decode_end,
+	ff_h263_decode_frame,
+	CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1,
+	/*next*/NULL,
+	/*flush*/NULL,
+	/*supported_framerates*/NULL,
+	/*pix_fmts*/ff_pixfmt_list_420,
+	/*long_name*/"MPEG-4 part 2 Microsoft variant version 2",
+	/*supported_samplerates*/NULL,
+	/*sample_fmts*/NULL,
+	/*channel_layouts*/NULL,
+	/*max_lowres*/3
+};
+#else
 AVCodec msmpeg4v2_decoder = {
     "msmpeg4v2",
     AVMEDIA_TYPE_VIDEO,
@@ -1947,7 +1992,30 @@ AVCodec msmpeg4v2_decoder = {
     .long_name= NULL_IF_CONFIG_SMALL("MPEG-4 part 2 Microsoft variant version 2"),
     .pix_fmts= ff_pixfmt_list_420,
 };
+#endif
 
+#ifdef _MSC_VER
+AVCodec msmpeg4v3_decoder = {
+	"msmpeg4",
+	AVMEDIA_TYPE_VIDEO,
+	CODEC_ID_MSMPEG4V3,
+	sizeof(MpegEncContext),
+	ff_msmpeg4_decode_init,
+	NULL,
+	ff_h263_decode_end,
+	ff_h263_decode_frame,
+	CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1,
+	/*next*/NULL,
+	/*flush*/NULL,
+	/*supported_framerates*/NULL,
+	/*pix_fmts*/ff_pixfmt_list_420,
+	/*long_name*/"MPEG-4 part 2 Microsoft variant version 3",
+	/*supported_samplerates*/NULL,
+	/*sample_fmts*/NULL,
+	/*channel_layouts*/NULL,
+	/*max_lowres*/3
+};
+#else
 AVCodec msmpeg4v3_decoder = {
     "msmpeg4",
     AVMEDIA_TYPE_VIDEO,
@@ -1962,7 +2030,30 @@ AVCodec msmpeg4v3_decoder = {
     .long_name= NULL_IF_CONFIG_SMALL("MPEG-4 part 2 Microsoft variant version 3"),
     .pix_fmts= ff_pixfmt_list_420,
 };
+#endif
 
+#ifdef _MSC_VER
+AVCodec wmv1_decoder = {
+	"wmv1",
+	AVMEDIA_TYPE_VIDEO,
+	CODEC_ID_WMV1,
+	sizeof(MpegEncContext),
+	ff_msmpeg4_decode_init,
+	NULL,
+	ff_h263_decode_end,
+	ff_h263_decode_frame,
+	CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1,
+	/*next*/NULL,
+	/*flush*/NULL,
+	/*supported_framerates*/NULL,
+	/*pix_fmts*/ff_pixfmt_list_420,
+	/*long_name*/"Windows Media Video 7",
+	/*supported_samplerates*/NULL,
+	/*sample_fmts*/NULL,
+	/*channel_layouts*/NULL,
+	/*max_lowres*/3
+};
+#else
 AVCodec wmv1_decoder = {
     "wmv1",
     AVMEDIA_TYPE_VIDEO,
@@ -1977,3 +2068,4 @@ AVCodec wmv1_decoder = {
     .long_name= NULL_IF_CONFIG_SMALL("Windows Media Video 7"),
     .pix_fmts= ff_pixfmt_list_420,
 };
+#endif

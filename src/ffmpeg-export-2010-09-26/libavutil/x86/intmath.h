@@ -21,6 +21,9 @@
 #ifndef AVUTIL_X86_INTMATH_H
 #define AVUTIL_X86_INTMATH_H
 
+#ifdef _MSC_VER
+#define FASTDIV(a,b) ((a)/(b))
+#else
 #define FASTDIV(a,b) \
     ({\
         int ret, dmy;\
@@ -31,5 +34,5 @@
             );\
         ret;\
     })
-
+#endif
 #endif /* AVUTIL_X86_INTMATH_H */

@@ -1764,6 +1764,32 @@ void ff_mpegts_parse_close(MpegTSContext *ts)
     av_free(ts);
 }
 
+#ifdef _MSC_VER
+AVInputFormat mpegts_demuxer = {
+	"mpegts",
+	"MPEG-2 transport stream format",
+	sizeof(MpegTSContext),
+	mpegts_probe,
+	mpegts_read_header,
+	mpegts_read_packet,
+	mpegts_read_close,
+	read_seek,
+	mpegts_get_pcr,
+	/*flags         */AVFMT_SHOW_IDS|AVFMT_TS_DISCONT,
+	/*extensions    */NULL,
+	/*value         */0,    
+	/*read_play     */NULL,
+	/*read_pause    */NULL,
+	/*codec_tag     */NULL,
+#ifdef USE_SYNCPOINT_SEARCH
+	/*read_seek2    */read_seek2,    
+#else
+	/*read_seek2    */NULL,    
+#endif
+	/*metadata_conv */NULL,
+	/*next          */NULL
+};
+#else
 AVInputFormat mpegts_demuxer = {
     "mpegts",
     NULL_IF_CONFIG_SMALL("MPEG-2 transport stream format"),
@@ -1779,7 +1805,34 @@ AVInputFormat mpegts_demuxer = {
     .read_seek2 = read_seek2,
 #endif
 };
+#endif
 
+#ifdef _MSC_VER
+AVInputFormat mpegtsraw_demuxer = {
+	"mpegtsraw",
+	"MPEG-2 raw transport stream format",
+	sizeof(MpegTSContext),
+	NULL,
+	mpegts_read_header,
+	mpegts_raw_read_packet,
+	mpegts_read_close,
+	read_seek,
+	mpegts_get_pcr,
+	/*flags         */AVFMT_SHOW_IDS|AVFMT_TS_DISCONT,
+	/*extensions    */NULL,
+	/*value         */0,    
+	/*read_play     */NULL,
+	/*read_pause    */NULL,
+	/*codec_tag     */NULL,
+#ifdef USE_SYNCPOINT_SEARCH
+	/*read_seek2    */read_seek2,
+#else
+	/*read_seek2    */NULL,    
+#endif
+	/*metadata_conv */NULL,
+	/*next          */NULL
+};
+#else
 AVInputFormat mpegtsraw_demuxer = {
     "mpegtsraw",
     NULL_IF_CONFIG_SMALL("MPEG-2 raw transport stream format"),
@@ -1795,3 +1848,4 @@ AVInputFormat mpegtsraw_demuxer = {
     .read_seek2 = read_seek2,
 #endif
 };
+#endif

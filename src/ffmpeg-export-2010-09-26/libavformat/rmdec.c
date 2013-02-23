@@ -19,6 +19,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#ifdef MS_PORT
+#include <assert.h>
+#endif
 #include "libavutil/avstring.h"
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
@@ -937,7 +940,11 @@ static int64_t rm_read_dts(AVFormatContext *s, int stream_index,
 
 AVInputFormat rm_demuxer = {
     "rm",
+#if defined(_MSC_VER)
+	"RealMedia format",
+#else
     NULL_IF_CONFIG_SMALL("RealMedia format"),
+#endif
     sizeof(RMDemuxContext),
     rm_probe,
     rm_read_header,
@@ -949,7 +956,11 @@ AVInputFormat rm_demuxer = {
 
 AVInputFormat rdt_demuxer = {
     "rdt",
-    NULL_IF_CONFIG_SMALL("RDT demuxer"),
+#if defined(_MSC_VER)
+    "RDT demuxer",
+#else
+	NULL_IF_CONFIG_SMALL("RDT demuxer"),
+#endif
     sizeof(RMDemuxContext),
     NULL,
     NULL,

@@ -43,6 +43,12 @@
 //#undef NDEBUG
 #include <assert.h>
 
+#ifdef MS_PORT
+#ifndef INT_BIT
+#    define INT_BIT (CHAR_BIT * sizeof(int))
+#endif
+#endif
+
 /* Cabac pre state table */
 
 static const int8_t cabac_context_init_I[460][2] =

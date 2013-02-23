@@ -42,6 +42,29 @@
 
 //#undef NDEBUG
 //#include <assert.h>
+#ifdef MS_PORT
+#ifndef FF_ALLOC_OR_GOTO
+#define FF_ALLOC_OR_GOTO(ctx, p, size, label)\
+{\
+	p = av_malloc(size);\
+	if (p == NULL && (size) != 0) {\
+	av_log(ctx, AV_LOG_ERROR, "Cannot allocate memory.\n");\
+	goto label;\
+	}\
+}
+#endif
+
+#ifndef FF_ALLOCZ_OR_GOTO
+#define FF_ALLOCZ_OR_GOTO(ctx, p, size, label)\
+{\
+	p = av_mallocz(size);\
+	if (p == NULL && (size) != 0) {\
+	av_log(ctx, AV_LOG_ERROR, "Cannot allocate memory.\n");\
+	goto label;\
+	}\
+}
+#endif
+#endif
 
 static void dct_unquantize_mpeg1_intra_c(MpegEncContext *s,
                                    DCTELEM *block, int n, int qscale);
@@ -1048,10 +1071,10 @@ int MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx)
 
         update_noise_reduction(s);
     }
-
+#if CONFIG_MPEG_XVMC_DECODER
     if(CONFIG_MPEG_XVMC_DECODER && s->avctx->xvmc_acceleration)
         return ff_xvmc_field_start(s, avctx);
-
+#endif
     return 0;
 }
 
@@ -1061,8 +1084,12 @@ void MPV_frame_end(MpegEncContext *s)
     int i;
     /* draw edge for correct motion prediction if outside */
     //just to make sure that all data is rendered.
+
+	if (0){
+#if CONFIG_MPEG_XVMC_DECODER
     if(CONFIG_MPEG_XVMC_DECODER && s->avctx->xvmc_acceleration){
         ff_xvmc_field_end(s);
+#endif
     }else if(!s->avctx->hwaccel
        && !(s->avctx->codec->capabilities&CODEC_CAP_HWACCEL_VDPAU)
        && s->unrestricted_mv
@@ -1845,11 +1872,12 @@ void MPV_decode_mb_internal(MpegEncContext *s, DCTELEM block[12][64],
                             int lowres_flag, int is_mpeg12)
 {
     const int mb_xy = s->mb_y * s->mb_stride + s->mb_x;
+#if CONFIG_MPEG_XVMC_DECODER
     if(CONFIG_MPEG_XVMC_DECODER && s->avctx->xvmc_acceleration){
         ff_xvmc_decode_mb(s);//xvmc uses pblocks
         return;
     }
-
+#endif
     if(s->avctx->debug&FF_DEBUG_DCT_COEFF) {
        /* save DCT coefficients */
        int i,j;
@@ -2015,9 +2043,11 @@ void MPV_decode_mb_internal(MpegEncContext *s, DCTELEM block[12][64],
                     }
                 }//fi gray
             }
+#if (CONFIG_WMV2_DECODER || CONFIG_WMV2_ENCODER)
             else if (CONFIG_WMV2_DECODER || CONFIG_WMV2_ENCODER) {
                 ff_wmv2_add_mb(s, block, dest_y, dest_cb, dest_cr);
             }
+#endif
         } else {
             /* dct only in intra block */
             if(s->encoding || !(s->codec_id==CODEC_ID_MPEG1VIDEO || s->codec_id==CODEC_ID_MPEG2VIDEO)){

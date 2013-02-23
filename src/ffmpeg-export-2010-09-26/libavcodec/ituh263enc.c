@@ -42,6 +42,9 @@
 
 //#undef NDEBUG
 //#include <assert.h>
+#ifdef MS_PORT
+#define CONFIG_FLV_ENCODER 0
+#endif
 
 /**
  * Table of number of bits a motion vector component needs.
@@ -91,8 +94,14 @@ static const uint8_t wrong_run[102] = {
 av_const int ff_h263_aspect_to_info(AVRational aspect){
     int i;
 
-    if(aspect.num==0) aspect= (AVRational){1,1};
-
+    if(aspect.num==0){ 
+#ifdef _MSC_VER
+		aspect.num = 1;
+		aspect.den = 1;
+#else
+		aspect= (AVRational){1,1};
+#endif
+	}
     for(i=1; i<6; i++){
         if(av_cmp_q(ff_h263_pixel_aspect[i], aspect) == 0){
             return i;

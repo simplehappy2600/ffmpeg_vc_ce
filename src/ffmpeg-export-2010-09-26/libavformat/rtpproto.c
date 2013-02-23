@@ -37,7 +37,11 @@
 #if HAVE_SYS_SELECT_H
 #include <sys/select.h>
 #endif
+#if defined(_MSC_VER)
+#include <time.h>
+#else
 #include <sys/time.h>
+#endif
 
 #define RTP_TX_BUF_SIZE  (64 * 1024)
 #define RTP_RX_BUF_SIZE  (128 * 1024)
@@ -378,6 +382,20 @@ int rtp_get_rtcp_file_handle(URLContext *h) {
     return s->rtcp_fd;
 }
 
+#if defined(_MSC_VER)
+URLProtocol rtp_protocol = {
+	"rtp",
+	rtp_open,
+	rtp_read,
+	rtp_write,
+	NULL, /* seek */
+	rtp_close,
+	/*next*/NULL,
+	/*url_read_pause*/NULL,
+	/*url_read_seek*/NULL,
+	/*.url_get_file_handle*/rtp_get_file_handle,
+};
+#else
 URLProtocol rtp_protocol = {
     "rtp",
     rtp_open,
@@ -387,3 +405,4 @@ URLProtocol rtp_protocol = {
     rtp_close,
     .url_get_file_handle = rtp_get_file_handle,
 };
+#endif

@@ -32,7 +32,11 @@
 #include <fcntl.h>
 #include <unistd.h>
 #if !HAVE_POLL_H
+#if defined(_MSC_VER)
+#include <time.h>
+#else
 #include <sys/time.h>
+#endif
 #if HAVE_WINSOCK2_H
 #include <winsock2.h>
 #elif HAVE_SYS_SELECT_H
@@ -44,7 +48,9 @@
 
 #if !HAVE_INET_ATON
 #include <stdlib.h>
+#if !defined(_MSC_VER)
 #include <strings.h>
+#endif
 
 int ff_inet_aton (const char * str, struct in_addr * add)
 {

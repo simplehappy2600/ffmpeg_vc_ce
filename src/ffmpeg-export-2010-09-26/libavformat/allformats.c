@@ -22,19 +22,24 @@
 #include "rtp.h"
 #include "rdt.h"
 
+#ifdef MS_PORT
+#include "config.h"
+#endif
+
+
 #define REGISTER_MUXER(X,x) { \
     extern AVOutputFormat x##_muxer; \
-    if(CONFIG_##X##_MUXER) av_register_output_format(&x##_muxer); }
+    /*if(CONFIG_##X##_MUXER)*/ av_register_output_format(&x##_muxer); }
 
 #define REGISTER_DEMUXER(X,x) { \
     extern AVInputFormat x##_demuxer; \
-    if(CONFIG_##X##_DEMUXER) av_register_input_format(&x##_demuxer); }
+    /*if(CONFIG_##X##_DEMUXER)*/ av_register_input_format(&x##_demuxer); }
 
 #define REGISTER_MUXDEMUX(X,x)  REGISTER_MUXER(X,x); REGISTER_DEMUXER(X,x)
 
 #define REGISTER_PROTOCOL(X,x) { \
     extern URLProtocol x##_protocol; \
-    if(CONFIG_##X##_PROTOCOL) av_register_protocol2(&x##_protocol, sizeof(x##_protocol)); }
+    /*if(CONFIG_##X##_PROTOCOL)*/ av_register_protocol2(&x##_protocol, sizeof(x##_protocol)); }
 
 void av_register_all(void)
 {
@@ -46,6 +51,24 @@ void av_register_all(void)
 
     avcodec_register_all();
 
+#ifdef MS_PORT
+	REGISTER_DEMUXER (ASF, asf);
+	REGISTER_DEMUXER  (AVI, avi);
+	REGISTER_MUXER  (AVI, avi);
+	REGISTER_DEMUXER (MPEGTS, mpegts);
+	REGISTER_DEMUXER  (MPEGTSRAW, mpegtsraw);	
+	REGISTER_DEMUXER (RM, rm);	
+	REGISTER_DEMUXER  (RTSP, rtsp);	
+	REGISTER_DEMUXER  (SDP, sdp);	
+#if CONFIG_SDP_DEMUXER
+	av_register_rtp_dynamic_payload_handlers();
+	av_register_rdt_dynamic_payload_handlers();
+#endif
+	REGISTER_PROTOCOL (FILE, file);	
+	REGISTER_PROTOCOL (RTP, rtp);
+	REGISTER_PROTOCOL (TCP, tcp);
+	REGISTER_PROTOCOL (UDP, udp);	
+#else
     /* (de)muxers */
     REGISTER_MUXER    (A64, a64);
     REGISTER_DEMUXER  (AAC, aac);
@@ -242,4 +265,5 @@ void av_register_all(void)
     REGISTER_PROTOCOL (RTP, rtp);
     REGISTER_PROTOCOL (TCP, tcp);
     REGISTER_PROTOCOL (UDP, udp);
+#endif
 }

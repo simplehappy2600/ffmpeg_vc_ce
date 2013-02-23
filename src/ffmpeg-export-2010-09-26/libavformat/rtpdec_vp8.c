@@ -143,6 +143,18 @@ static void vp8_free_context(PayloadContext *vp8)
     av_free(vp8);
 }
 
+#ifdef _MSC_VER
+RTPDynamicProtocolHandler ff_vp8_dynamic_handler = {
+	/*enc_name        */"VP8",
+	/*codec_type      */AVMEDIA_TYPE_VIDEO,
+	/*codec_id        */CODEC_ID_VP8,
+	/*parse_sdp_a_line*/NULL,                           
+	/*open            */vp8_new_context,
+	/*close           */vp8_free_context,
+	/*parse_packet    */vp8_handle_packet,
+	/*next            */NULL
+};
+#else
 RTPDynamicProtocolHandler ff_vp8_dynamic_handler = {
     .enc_name       = "VP8",
     .codec_type     = AVMEDIA_TYPE_VIDEO,
@@ -151,3 +163,4 @@ RTPDynamicProtocolHandler ff_vp8_dynamic_handler = {
     .close          = vp8_free_context,
     .parse_packet   = vp8_handle_packet,
 };
+#endif

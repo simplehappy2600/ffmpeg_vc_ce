@@ -85,4 +85,8 @@ int poll(struct pollfd *fds, nfds_t numfds, int timeout);
 #endif /* CONFIG_FFSERVER */
 #endif /* CONFIG_NETWORK */
 
+#ifdef WINCE
+#define errno ((int)GetLastError())
+#endif
+
 #endif /* AVFORMAT_OS_SUPPORT_H */

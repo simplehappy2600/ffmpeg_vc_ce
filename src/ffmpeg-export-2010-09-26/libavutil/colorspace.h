@@ -27,6 +27,10 @@
 #ifndef AVUTIL_COLORSPACE_H
 #define AVUTIL_COLORSPACE_H
 
+#if defined(_MSC_VER) && !defined(__cplusplus)
+#   define inline __inline
+#endif
+
 #define SCALEBITS 10
 #define ONE_HALF  (1 << (SCALEBITS - 1))
 #define FIX(x)    ((int) ((x) * (1<<SCALEBITS) + 0.5))

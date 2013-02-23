@@ -69,9 +69,11 @@
 
 #if HAVE_TERMIOS_H
 #include <fcntl.h>
+#ifndef _MSC_VER
 #include <sys/ioctl.h>
 #include <sys/time.h>
 #include <termios.h>
+#endif
 #elif HAVE_CONIO_H
 #include <conio.h>
 #endif
@@ -101,7 +103,11 @@ typedef struct AVMetaDataMap {
     int in_file;
 } AVMetaDataMap;
 
+#ifdef _MSC_VER
+//static const OptionDef *options;
+#else
 static const OptionDef options[];
+#endif
 
 #define MAX_FILES 100
 
@@ -193,7 +199,11 @@ static int do_psnr = 0;
 static int do_pass = 0;
 static char *pass_logfilename_prefix = NULL;
 static int audio_stream_copy = 0;
+#ifdef MS_PORT
+static int video_stream_copy = 1;
+#else
 static int video_stream_copy = 0;
+#endif
 static int subtitle_stream_copy = 0;
 static int video_sync_method= -1;
 static int audio_sync_method= 0;
@@ -501,6 +511,35 @@ static int configure_filters(AVInputStream *ist, AVOutputStream *ost)
     return 0;
 }
 #endif /* CONFIG_AVFILTER */
+
+#ifdef MS_PORT
+#include "libavutil\libm.h"
+#include <WTYPES.H>
+#include <WINBASE.H>
+#include <Windows.h>
+
+void usleep(unsigned long usec)
+{
+	Sleep(usec/1000);
+}
+#endif
+
+#ifdef _MSC_VER
+int strcasecmp(char *s1, char *s2)
+{
+	while  (toupper((unsigned char)*s1) == toupper((unsigned char)*s2++))
+		if (*s1++ == '\0') return 0;
+	return(toupper((unsigned char)*s1) - toupper((unsigned char)*--s2));
+}
+
+int strncasecmp(char *s1, char *s2, register int n)
+{
+	while (--n >= 0 && toupper((unsigned char)*s1) == toupper((unsigned char)*s2++))
+		if (*s1++ == '\0')  return 0;
+	return(n < 0 ? 0 : toupper((unsigned char)*s1) - toupper((unsigned char)*--s2));
+}
+#endif
+
 
 static void term_exit(void)
 {
@@ -1092,7 +1131,11 @@ static void do_subtitle_out(AVFormatContext *s,
     for(i = 0; i < nb; i++) {
         sub->pts = av_rescale_q(pts, ist->st->time_base, AV_TIME_BASE_Q);
         // start_display_time is required to be 0
+#ifdef _MSC_VER		
+		sub->pts              += av_rescale_q(sub->start_display_time, CtmpAVRational(1, 1000), AV_TIME_BASE_Q);
+#else
         sub->pts              += av_rescale_q(sub->start_display_time, (AVRational){1, 1000}, AV_TIME_BASE_Q);
+#endif
         sub->end_display_time -= sub->start_display_time;
         sub->start_display_time = 0;
         subtitle_out_size = avcodec_encode_subtitle(enc, subtitle_out,
@@ -2601,9 +2644,14 @@ static int transcode(AVFormatContext **output_files,
             }
         }
 
-        /* finish if recording time exhausted */
+        /* finish if recording time exhausted */		
+#ifdef _MSC_VER
+		if (recording_time != INT64_MAX &&
+			av_compare_ts(pkt.pts, ist->st->time_base, recording_time + start_time, CtmpAVRational(1, 1000000)) >= 0) {
+#else
         if (recording_time != INT64_MAX &&
             av_compare_ts(pkt.pts, ist->st->time_base, recording_time + start_time, (AVRational){1, 1000000}) >= 0) {
+#endif
             ist->is_past_recording_time = 1;
             goto discard_packet;
         }
@@ -3397,7 +3445,11 @@ static void new_video_stream(AVFormatContext *oc)
         const char *p;
         int i;
         AVCodec *codec;
+#ifdef _MSC_VER
+		AVRational fps= frame_rate.num ? frame_rate : CtmpAVRational(25,1);
+#else		
         AVRational fps= frame_rate.num ? frame_rate : (AVRational){25,1};
+#endif
 
         if (video_codec_name) {
             codec_id = find_codec_or_die(video_codec_name, AVMEDIA_TYPE_VIDEO, 1,
@@ -3556,7 +3608,12 @@ static void new_audio_stream(AVFormatContext *oc)
         choose_sample_rate(st, codec);
     }
     nb_ocodecs++;
+#ifdef _MSC_VER
+	
+	audio_enc->time_base= CtmpAVRational(1, audio_sample_rate);
+#else
     audio_enc->time_base= (AVRational){1, audio_sample_rate};
+#endif
     if (audio_language) {
         av_metadata_set2(&st->metadata, "language", audio_language, 0);
         av_freep(&audio_language);
@@ -3880,40 +3937,7 @@ static void show_usage(void)
     printf("\n");
 }
 
-static void show_help(void)
-{
-    av_log_set_callback(log_callback_help);
-    show_usage();
-    show_help_options(options, "Main options:\n",
-                      OPT_EXPERT | OPT_AUDIO | OPT_VIDEO | OPT_SUBTITLE | OPT_GRAB, 0);
-    show_help_options(options, "\nAdvanced options:\n",
-                      OPT_EXPERT | OPT_AUDIO | OPT_VIDEO | OPT_SUBTITLE | OPT_GRAB,
-                      OPT_EXPERT);
-    show_help_options(options, "\nVideo options:\n",
-                      OPT_EXPERT | OPT_AUDIO | OPT_VIDEO | OPT_GRAB,
-                      OPT_VIDEO);
-    show_help_options(options, "\nAdvanced Video options:\n",
-                      OPT_EXPERT | OPT_AUDIO | OPT_VIDEO | OPT_GRAB,
-                      OPT_VIDEO | OPT_EXPERT);
-    show_help_options(options, "\nAudio options:\n",
-                      OPT_EXPERT | OPT_AUDIO | OPT_VIDEO | OPT_GRAB,
-                      OPT_AUDIO);
-    show_help_options(options, "\nAdvanced Audio options:\n",
-                      OPT_EXPERT | OPT_AUDIO | OPT_VIDEO | OPT_GRAB,
-                      OPT_AUDIO | OPT_EXPERT);
-    show_help_options(options, "\nSubtitle options:\n",
-                      OPT_SUBTITLE | OPT_GRAB,
-                      OPT_SUBTITLE);
-    show_help_options(options, "\nAudio/Video grab options:\n",
-                      OPT_GRAB,
-                      OPT_GRAB);
-    printf("\n");
-    av_opt_show2(avcodec_opts[0], NULL, AV_OPT_FLAG_ENCODING_PARAM|AV_OPT_FLAG_DECODING_PARAM, 0);
-    printf("\n");
-    av_opt_show2(avformat_opts, NULL, AV_OPT_FLAG_ENCODING_PARAM|AV_OPT_FLAG_DECODING_PARAM, 0);
-    printf("\n");
-    av_opt_show2(sws_opts, NULL, AV_OPT_FLAG_ENCODING_PARAM|AV_OPT_FLAG_DECODING_PARAM, 0);
-}
+
 
 static void opt_target(const char *arg)
 {
@@ -4348,4 +4372,40 @@ int main(int argc, char **argv)
     }
 
     return ffmpeg_exit(0);
+}
+
+
+static void show_help(void)
+{
+	av_log_set_callback(log_callback_help);
+	show_usage();
+	show_help_options(options, "Main options:\n",
+		OPT_EXPERT | OPT_AUDIO | OPT_VIDEO | OPT_SUBTITLE | OPT_GRAB, 0);
+	show_help_options(options, "\nAdvanced options:\n",
+		OPT_EXPERT | OPT_AUDIO | OPT_VIDEO | OPT_SUBTITLE | OPT_GRAB,
+		OPT_EXPERT);
+	show_help_options(options, "\nVideo options:\n",
+		OPT_EXPERT | OPT_AUDIO | OPT_VIDEO | OPT_GRAB,
+		OPT_VIDEO);
+	show_help_options(options, "\nAdvanced Video options:\n",
+		OPT_EXPERT | OPT_AUDIO | OPT_VIDEO | OPT_GRAB,
+		OPT_VIDEO | OPT_EXPERT);
+	show_help_options(options, "\nAudio options:\n",
+		OPT_EXPERT | OPT_AUDIO | OPT_VIDEO | OPT_GRAB,
+		OPT_AUDIO);
+	show_help_options(options, "\nAdvanced Audio options:\n",
+		OPT_EXPERT | OPT_AUDIO | OPT_VIDEO | OPT_GRAB,
+		OPT_AUDIO | OPT_EXPERT);
+	show_help_options(options, "\nSubtitle options:\n",
+		OPT_SUBTITLE | OPT_GRAB,
+		OPT_SUBTITLE);
+	show_help_options(options, "\nAudio/Video grab options:\n",
+		OPT_GRAB,
+		OPT_GRAB);
+	printf("\n");
+	av_opt_show2(avcodec_opts[0], NULL, AV_OPT_FLAG_ENCODING_PARAM|AV_OPT_FLAG_DECODING_PARAM, 0);
+	printf("\n");
+	av_opt_show2(avformat_opts, NULL, AV_OPT_FLAG_ENCODING_PARAM|AV_OPT_FLAG_DECODING_PARAM, 0);
+	printf("\n");
+	av_opt_show2(sws_opts, NULL, AV_OPT_FLAG_ENCODING_PARAM|AV_OPT_FLAG_DECODING_PARAM, 0);
 }

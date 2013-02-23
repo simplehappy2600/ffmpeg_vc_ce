@@ -43,6 +43,26 @@
 //#undef NDEBUG
 #include <assert.h>
 
+#ifdef MS_PORT
+#define FF_ALLOC_OR_GOTO(ctx, p, size, label)\
+{\
+	p = av_malloc(size);\
+	if (p == NULL && (size) != 0) {\
+	av_log(ctx, AV_LOG_ERROR, "Cannot allocate memory.\n");\
+	goto label;\
+	}\
+}
+
+#define FF_ALLOCZ_OR_GOTO(ctx, p, size, label)\
+{\
+	p = av_mallocz(size);\
+	if (p == NULL && (size) != 0) {\
+	av_log(ctx, AV_LOG_ERROR, "Cannot allocate memory.\n");\
+	goto label;\
+	}\
+}
+#endif
+
 static const uint8_t rem6[52]={
 0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5, 0, 1, 2, 3,
 };
@@ -1645,8 +1665,10 @@ static void field_end(H264Context *h){
     s->current_picture_ptr->qscale_type= FF_QSCALE_TYPE_H264;
     s->current_picture_ptr->pict_type= s->pict_type;
 
+#if CONFIG_H264_VDPAU_DECODER
     if (CONFIG_H264_VDPAU_DECODER && s->avctx->codec->capabilities&CODEC_CAP_HWACCEL_VDPAU)
         ff_vdpau_h264_set_reference_frames(s);
+#endif
 
     if(!s->dropable) {
         ff_h264_execute_ref_pic_marking(h, h->mmco, h->mmco_index);
@@ -1660,10 +1682,10 @@ static void field_end(H264Context *h){
         if (avctx->hwaccel->end_frame(avctx) < 0)
             av_log(avctx, AV_LOG_ERROR, "hardware accelerator failed to decode picture\n");
     }
-
+#if CONFIG_H264_VDPAU_DECODER
     if (CONFIG_H264_VDPAU_DECODER && s->avctx->codec->capabilities&CODEC_CAP_HWACCEL_VDPAU)
         ff_vdpau_h264_picture_complete(s);
-
+#endif
     /*
      * FIXME: Error handling code does not seem to support interlaced
      * when slices span multiple rows
@@ -2842,8 +2864,10 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size){
             if (h->current_slice == 1) {
                 if (s->avctx->hwaccel && s->avctx->hwaccel->start_frame(s->avctx, NULL, 0) < 0)
                     return -1;
+#if CONFIG_H264_VDPAU_DECODER
                 if(CONFIG_H264_VDPAU_DECODER && s->avctx->codec->capabilities&CODEC_CAP_HWACCEL_VDPAU)
                     ff_vdpau_h264_picture_start(s);
+#endif
             }
 
             s->current_picture_ptr->key_frame |=
@@ -2857,11 +2881,13 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size){
                 if(avctx->hwaccel) {
                     if (avctx->hwaccel->decode_slice(avctx, &buf[buf_index - consumed], consumed) < 0)
                         return -1;
+#if CONFIG_H264_VDPAU_DECODER
                 }else
                 if(CONFIG_H264_VDPAU_DECODER && s->avctx->codec->capabilities&CODEC_CAP_HWACCEL_VDPAU){
                     static const uint8_t start_code[] = {0x00, 0x00, 0x01};
                     ff_vdpau_add_data_chunk(s, start_code, sizeof(start_code));
                     ff_vdpau_add_data_chunk(s, &buf[buf_index - consumed], consumed );
+#endif
                 }else
                     context_count++;
             }
@@ -3377,7 +3403,28 @@ av_cold int ff_h264_decode_end(AVCodecContext *avctx)
     return 0;
 }
 
-
+#ifdef _MSC_VER
+AVCodec h264_decoder = {
+	"h264",
+	AVMEDIA_TYPE_VIDEO,
+	CODEC_ID_H264,
+	sizeof(H264Context),
+	ff_h264_decode_init,
+	NULL,
+	ff_h264_decode_end,
+	decode_frame,
+	/*CODEC_CAP_DRAW_HORIZ_BAND |*/ CODEC_CAP_DR1 | CODEC_CAP_DELAY,
+	/*next*/NULL,
+	/*flush*/flush_dpb,
+	/*supported_framerates*/NULL,
+	/*pix_fmts*/NULL,
+	/*long_name*/"H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10",
+	/*supported_samplerates*/NULL,
+	/*sample_fmts*/NULL,
+	/*channel_layouts*/NULL,
+	/*max_lowres*/0
+};
+#else
 AVCodec h264_decoder = {
     "h264",
     AVMEDIA_TYPE_VIDEO,
@@ -3391,6 +3438,7 @@ AVCodec h264_decoder = {
     .flush= flush_dpb,
     .long_name = NULL_IF_CONFIG_SMALL("H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10"),
 };
+#endif
 
 #if CONFIG_H264_VDPAU_DECODER
 AVCodec h264_vdpau_decoder = {

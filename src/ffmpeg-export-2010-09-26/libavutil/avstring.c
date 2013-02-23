@@ -26,6 +26,10 @@
 #include "avstring.h"
 #include "mem.h"
 
+#ifdef WINCE
+#include "common.h"
+#endif
+
 int av_strstart(const char *str, const char *pfx, const char **ptr)
 {
     while (*pfx && *pfx == *str) {

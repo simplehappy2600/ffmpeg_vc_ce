@@ -1,8 +1,10 @@
     { "L", OPT_EXIT, {(void*)show_license}, "show license" },
+#ifndef _MSC_VER
     { "h", OPT_EXIT, {(void*)show_help}, "show help" },
     { "?", OPT_EXIT, {(void*)show_help}, "show help" },
     { "help", OPT_EXIT, {(void*)show_help}, "show help" },
     { "-help", OPT_EXIT, {(void*)show_help}, "show help" },
+#endif
     { "version", OPT_EXIT, {(void*)show_version}, "show version" },
     { "formats"  , OPT_EXIT, {(void*)show_formats  }, "show available formats" },
     { "codecs"   , OPT_EXIT, {(void*)show_codecs   }, "show available codecs" },

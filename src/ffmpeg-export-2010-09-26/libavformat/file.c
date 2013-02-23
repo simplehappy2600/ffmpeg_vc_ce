@@ -26,7 +26,9 @@
 #include <io.h>
 #endif
 #include <unistd.h>
+#ifndef WINCE
 #include <sys/stat.h>
+#endif
 #include <stdlib.h>
 #include "os_support.h"
 
@@ -80,12 +82,14 @@ static int file_open(URLContext *h, const char *filename, int flags)
 static int64_t file_seek(URLContext *h, int64_t pos, int whence)
 {
     int fd = (intptr_t) h->priv_data;
+#ifndef WINCE
     if (whence == AVSEEK_SIZE) {
         struct stat st;
         int ret = fstat(fd, &st);
         return ret < 0 ? AVERROR(errno) : st.st_size;
     }
-    return lseek(fd, pos, whence);
+#endif
+    return lseek(fd, pos, whence);	
 }
 
 static int file_close(URLContext *h)
@@ -94,6 +98,22 @@ static int file_close(URLContext *h)
     return close(fd);
 }
 
+#if defined(_MSC_VER)
+URLProtocol file_protocol = {
+	"file",
+	file_open,
+	file_read,
+	file_write,
+	file_seek,
+	file_close,
+	/*next*/NULL,
+	/*url_read_pause*/NULL,
+	/*url_read_seek*/NULL,
+	/*url_get_file_handle*/file_get_handle,
+	/*priv_data_size*/0,
+	/*priv_data_class*/NULL
+};
+#else
 URLProtocol file_protocol = {
     "file",
     file_open,
@@ -103,6 +123,7 @@ URLProtocol file_protocol = {
     file_close,
     .url_get_file_handle = file_get_handle,
 };
+#endif
 
 #endif /* CONFIG_FILE_PROTOCOL */
 

@@ -26,7 +26,11 @@
 #if HAVE_SYS_SELECT_H
 #include <sys/select.h>
 #endif
+#if defined(_MSC_VER)
+#include <time.h>
+#else
 #include <sys/time.h>
+#endif
 
 typedef struct TCPContext {
     int fd;
@@ -215,6 +219,22 @@ static int tcp_get_file_handle(URLContext *h)
     return s->fd;
 }
 
+#if defined(_MSC_VER)
+URLProtocol tcp_protocol = {
+	"tcp",
+	tcp_open,
+	tcp_read,
+	tcp_write,
+	NULL, /* seek */
+	tcp_close,
+	/*next*/NULL,
+	/*url_read_pause*/NULL,
+	/*url_read_seek*/NULL,
+	/*url_get_file_handle*/tcp_get_file_handle,
+	/*priv_data_size*/0,
+	/*priv_data_class*/NULL
+};
+#else
 URLProtocol tcp_protocol = {
     "tcp",
     tcp_open,
@@ -224,3 +244,4 @@ URLProtocol tcp_protocol = {
     tcp_close,
     .url_get_file_handle = tcp_get_file_handle,
 };
+#endif

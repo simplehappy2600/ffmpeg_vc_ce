@@ -23,6 +23,14 @@
 #include "riff.h"
 #include "libavutil/intreadwrite.h"
 
+#ifdef MS_PORT
+#include "assert.h"
+static av_always_inline av_const long int lrintf(float x)
+{
+	return (int)(rint(x));
+}
+#endif
+
 /*
  * TODO:
  *  - fill all fields if non streamed (nb_frames for example)
@@ -329,9 +337,16 @@ static int avi_write_header(AVFormatContext *s)
            && s->streams[i]->sample_aspect_ratio.num>0
            && s->streams[i]->sample_aspect_ratio.den>0){
             int vprp= ff_start_tag(pb, "vprp");
-            AVRational dar = av_mul_q(s->streams[i]->sample_aspect_ratio,
-                                      (AVRational){stream->width, stream->height});
-            int num, den;
+
+#ifdef _MSC_VER
+			AVRational dar = av_mul_q(s->streams[i]->sample_aspect_ratio,
+				CtmpAVRational(stream->width, stream->height));
+			int num, den;			
+#else
+			AVRational dar = av_mul_q(s->streams[i]->sample_aspect_ratio,
+				(AVRational){stream->width, stream->height});
+			int num, den;
+#endif
             av_reduce(&num, &den, dar.num, dar.den, 0xFFFF);
 
             put_le32(pb, 0); //video format  = unknown
@@ -634,6 +649,30 @@ static int avi_write_trailer(AVFormatContext *s)
     return res;
 }
 
+#ifdef _MSC_VER
+const AVCodecTag* const avi_muxer_codec_tag[] = {ff_codec_bmp_tags, ff_codec_wav_tags, 0};
+
+AVOutputFormat avi_muxer = {
+	"avi",
+	"AVI format",
+	"video/x-msvideo",
+	"avi",
+	sizeof(AVIContext),
+	CODEC_ID_MP2,
+	CODEC_ID_MPEG4,
+	avi_write_header,
+	avi_write_packet,
+	avi_write_trailer,
+
+	/*flags*/AVFMT_VARIABLE_FPS,
+	/*set_parameters*/NULL,
+	/*interleave_packet*/NULL,
+	/*codec_tag*/avi_muxer_codec_tag,
+	/*subtitle_codec*/0,
+	/*metadata_conv*/ff_avi_metadata_conv,
+	/*next*/NULL
+};
+#else
 AVOutputFormat avi_muxer = {
     "avi",
     NULL_IF_CONFIG_SMALL("AVI format"),
@@ -649,3 +688,4 @@ AVOutputFormat avi_muxer = {
     .flags= AVFMT_VARIABLE_FPS,
     .metadata_conv = ff_avi_metadata_conv,
 };
+#endif

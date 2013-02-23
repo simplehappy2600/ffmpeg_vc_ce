@@ -33,7 +33,11 @@
 #if HAVE_SYS_SELECT_H
 #include <sys/select.h>
 #endif
+#if defined(_MSC_VER)
+#include <time.h>
+#else
 #include <sys/time.h>
+#endif
 
 #ifndef IPV6_ADD_MEMBERSHIP
 #define IPV6_ADD_MEMBERSHIP IPV6_JOIN_GROUP
@@ -488,12 +492,27 @@ static int udp_close(URLContext *h)
     return 0;
 }
 
+#if defined(_MSC_VER)
 URLProtocol udp_protocol = {
-    "udp",
-    udp_open,
-    udp_read,
-    udp_write,
-    NULL, /* seek */
-    udp_close,
-    .url_get_file_handle = udp_get_file_handle,
+	"udp",
+	udp_open,
+	udp_read,
+	udp_write,
+	NULL, /* seek */
+	udp_close,
+	/*next*/NULL,
+	/*url_read_pause*/NULL,
+	/*url_read_seek*/NULL,
+	/*.url_get_file_handle*/udp_get_file_handle,
 };
+#else
+URLProtocol udp_protocol = {
+	"udp",
+	udp_open,
+	udp_read,
+	udp_write,
+	NULL, /* seek */
+	udp_close,
+	.url_get_file_handle = udp_get_file_handle,
+};
+#endif

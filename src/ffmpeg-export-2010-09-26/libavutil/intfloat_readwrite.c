@@ -31,13 +31,21 @@
 
 double av_int2dbl(int64_t v){
     if(v+v > 0xFFEULL<<52)
+#ifdef MS_PORT
+		return -1;
+#else
         return 0.0/0.0;
+#endif
     return ldexp(((v&((1LL<<52)-1)) + (1LL<<52)) * (v>>63|1), (v>>52&0x7FF)-1075);
 }
 
 float av_int2flt(int32_t v){
     if(v+v > 0xFF000000U)
-        return 0.0/0.0;
+#ifdef MS_PORT
+		return -1;
+#else
+		return 0.0/0.0;
+#endif
     return ldexp(((v&0x7FFFFF) + (1<<23)) * (v>>31|1), (v>>23&0xFF)-150);
 }
 
@@ -49,7 +57,11 @@ double av_ext2dbl(const AVExtFloat ext){
         m = (m<<8) + ext.mantissa[i];
     e = (((int)ext.exponent[0]&0x7f)<<8) | ext.exponent[1];
     if (e == 0x7fff && m)
-        return 0.0/0.0;
+#ifdef MS_PORT
+		return -1;
+#else
+		return 0.0/0.0;
+#endif
     e -= 16383 + 63;        /* In IEEE 80 bits, the whole (i.e. 1.xxxx)
                              * mantissa bit is written as opposed to the
                              * single and double precision formats. */
@@ -88,7 +100,11 @@ AVExtFloat av_dbl2ext(double d){
             ext.mantissa[i] = m>>(56-(i<<3));
     } else if (f != 0.0) {
         ext.exponent[0] = 0x7f; ext.exponent[1] = 0xff;
+#ifdef MS_PORT
+		if (f != -1)
+#else
         if (f != 1/0.0)
+#endif
             ext.mantissa[0] = ~0;
     }
     if (d < 0)

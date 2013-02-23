@@ -35,6 +35,8 @@ void ff_mms_set_stream_selection(URLContext *h, AVFormatContext *format);
 #undef NDEBUG
 #include <assert.h>
 
+
+
 #define ASF_MAX_STREAMS 127
 #define FRAME_HEADER_SIZE 17
 // Fix Me! FRAME_HEADER_SIZE may be different.
@@ -192,6 +194,9 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
     int64_t gsize;
     AVRational dar[128];
     uint32_t bitrate[128];
+#ifdef _MSC_VER
+	AVRational r; 
+#endif
 
     memset(dar, 0, sizeof(dar));
     memset(bitrate, 0, sizeof(bitrate));
@@ -575,7 +580,13 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 get_le32(pb);             // flags
                 name_len = get_le32(pb);  // name length
                 get_str16_nolen(pb, name_len * 2, name, sizeof(name));
+#ifdef _MSC_VER
+				r.num = 1;
+				r.den = 10000000;
+				ff_new_chapter(s, i, r, pres_time, AV_NOPTS_VALUE, name );
+#else
                 ff_new_chapter(s, i, (AVRational){1, 10000000}, pres_time, AV_NOPTS_VALUE, name );
+#endif
             }
 #if 0
         } else if (!guidcmp(&g, &ff_asf_codec_comment_header)) {
@@ -1225,6 +1236,28 @@ static int asf_read_seek(AVFormatContext *s, int stream_index, int64_t pts, int 
     return 0;
 }
 
+#ifdef _MSC_VER
+AVInputFormat asf_demuxer = {
+	"asf",
+	"ASF format",
+	sizeof(ASFContext),
+	asf_probe,
+	asf_read_header,
+	asf_read_packet,
+	asf_read_close,
+	asf_read_seek,
+	asf_read_pts,  
+	/*flags         */0,
+	/*extensions    */NULL,
+	/*value         */0,    
+	/*read_play     */NULL,
+	/*read_pause    */NULL,
+	/*codec_tag     */NULL,
+	/*read_seek2    */NULL,    
+	/*metadata_conv */ff_asf_metadata_conv,
+	/*next          */NULL,
+};
+#else
 AVInputFormat asf_demuxer = {
     "asf",
     NULL_IF_CONFIG_SMALL("ASF format"),
@@ -1237,3 +1270,4 @@ AVInputFormat asf_demuxer = {
     asf_read_pts,
     .metadata_conv = ff_asf_metadata_conv,
 };
+#endif

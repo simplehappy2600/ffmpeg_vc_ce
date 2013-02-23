@@ -396,10 +396,15 @@ retry:
     }
 
     /* let's go :-) */
-    if (CONFIG_WMV2_DECODER && s->msmpeg4_version==5) {
+	if (0){
+#if CONFIG_WMV2_DECODER
+    else if (CONFIG_WMV2_DECODER && s->msmpeg4_version==5) {
         ret= ff_wmv2_decode_picture_header(s);
+#endif
+#if CONFIG_MSMPEG4_DECODER
     } else if (CONFIG_MSMPEG4_DECODER && s->msmpeg4_version) {
         ret = msmpeg4_decode_picture_header(s);
+#endif
     } else if (CONFIG_MPEG4_DECODER && s->h263_pred) {
         if(s->avctx->extradata_size && s->picture_number==0){
             GetBitContext gb;
@@ -410,8 +415,10 @@ retry:
         ret = ff_mpeg4_decode_picture_header(s, &s->gb);
     } else if (CONFIG_H263I_DECODER && s->codec_id == CODEC_ID_H263I) {
         ret = ff_intel_h263_decode_picture_header(s);
+#if CONFIG_FLV_DECODER
     } else if (CONFIG_FLV_DECODER && s->h263_flv) {
         ret = ff_flv_decode_picture_header(s);
+#endif
     } else {
         ret = h263_decode_picture_header(s);
     }
@@ -620,10 +627,12 @@ retry:
     if(MPV_frame_start(s, avctx) < 0)
         return -1;
 
+#if CONFIG_MPEG4_VDPAU_DECODER
     if (CONFIG_MPEG4_VDPAU_DECODER && (s->avctx->codec->capabilities & CODEC_CAP_HWACCEL_VDPAU)) {
         ff_vdpau_mpeg4_decode_picture(s, s->gb.buffer, s->gb.buffer_end - s->gb.buffer);
         goto frame_end;
     }
+#endif
 
     if (avctx->hwaccel) {
         if (avctx->hwaccel->start_frame(avctx, s->gb.buffer, s->gb.buffer_end - s->gb.buffer) < 0)
@@ -634,12 +643,13 @@ retry:
 
     //the second part of the wmv2 header contains the MB skip bits which are stored in current_picture->mb_type
     //which is not available before MPV_frame_start()
+#if CONFIG_WMV2_DECODER
     if (CONFIG_WMV2_DECODER && s->msmpeg4_version==5){
         ret = ff_wmv2_decode_secondary_picture_header(s);
         if(ret<0) return ret;
         if(ret==1) goto intrax8_decoded;
     }
-
+#endif
     /* decode each macroblock */
     s->mb_x=0;
     s->mb_y=0;
@@ -660,10 +670,12 @@ retry:
         decode_slice(s);
     }
 
+#ifndef MS_PORT
     if (s->h263_msmpeg4 && s->msmpeg4_version<4 && s->pict_type==FF_I_TYPE)
         if(!CONFIG_MSMPEG4_DECODER || msmpeg4_decode_ext_header(s, buf_size) < 0){
             s->error_status_table[s->mb_num-1]= AC_ERROR|DC_ERROR|MV_ERROR;
         }
+#endif
 
     assert(s->bitstream_buffer_size==0);
 frame_end:
@@ -728,6 +740,28 @@ av_log(avctx, AV_LOG_DEBUG, "%"PRId64"\n", rdtsc()-time);
     return get_consumed_bytes(s, buf_size);
 }
 
+#ifdef _MSC_VER
+AVCodec h263_decoder = {
+	"h263",
+	AVMEDIA_TYPE_VIDEO,
+	CODEC_ID_H263,
+	sizeof(MpegEncContext),
+	ff_h263_decode_init,
+	NULL,
+	ff_h263_decode_end,
+	ff_h263_decode_frame,
+	CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1 | CODEC_CAP_TRUNCATED | CODEC_CAP_DELAY,
+	/*next*/NULL,
+	/*.flush= */ff_mpeg_flush,
+	/*supported_framerates*/NULL,	
+	/*.pix_fmts= */ff_hwaccel_pixfmt_list_420,
+	/*.long_name= */"H.263 / H.263-1996, H.263+ / H.263-1998 / H.263 version 2",
+	/*supported_samplerates*/NULL,
+	/*sample_fmts*/NULL,
+	/*channel_layouts*/NULL,
+	/*.max_lowres= */3,	
+};
+#else
 AVCodec h263_decoder = {
     "h263",
     AVMEDIA_TYPE_VIDEO,
@@ -743,3 +777,4 @@ AVCodec h263_decoder = {
     .long_name= NULL_IF_CONFIG_SMALL("H.263 / H.263-1996, H.263+ / H.263-1998 / H.263 version 2"),
     .pix_fmts= ff_hwaccel_pixfmt_list_420,
 };
+#endif

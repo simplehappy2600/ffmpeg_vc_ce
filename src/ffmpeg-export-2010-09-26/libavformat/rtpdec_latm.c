@@ -23,7 +23,9 @@
 #include "internal.h"
 #include "libavutil/avstring.h"
 #include "libavcodec/get_bits.h"
+#ifndef _MSC_VER
 #include <strings.h>
+#endif
 
 struct PayloadContext {
     ByteIOContext *dyn_buf;
@@ -176,6 +178,18 @@ static int latm_parse_sdp_line(AVFormatContext *s, int st_index,
     return 0;
 }
 
+#ifdef _MSC_VER
+RTPDynamicProtocolHandler ff_mp4a_latm_dynamic_handler = {
+	/*enc_name        */"MP4A-LATM",
+	/*codec_type      */AVMEDIA_TYPE_AUDIO,
+	/*codec_id        */CODEC_ID_AAC,
+	/*parse_sdp_a_line*/latm_parse_sdp_line,                           
+	/*open            */latm_new_context,
+	/*close           */latm_free_context,
+	/*parse_packet    */latm_parse_packet,
+	/*next            */NULL
+};
+#else
 RTPDynamicProtocolHandler ff_mp4a_latm_dynamic_handler = {
     .enc_name           = "MP4A-LATM",
     .codec_type         = AVMEDIA_TYPE_AUDIO,
@@ -185,3 +199,4 @@ RTPDynamicProtocolHandler ff_mp4a_latm_dynamic_handler = {
     .close              = latm_free_context,
     .parse_packet       = latm_parse_packet
 };
+#endif

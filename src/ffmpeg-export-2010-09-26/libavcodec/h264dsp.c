@@ -29,6 +29,12 @@
 #include "avcodec.h"
 #include "h264dsp.h"
 
+#ifdef MS_PORT
+#define ARCH_ARM 0
+#define HAVE_ALTIVEC 0
+#define HAVE_MMX 0
+#endif
+
 #define op_scale1(x)  block[x] = av_clip_uint8( (block[x]*weight + offset) >> log2_denom )
 #define op_scale2(x)  dst[x] = av_clip_uint8( (src[x]*weights + dst[x]*weightd + offset) >> (log2_denom+1))
 #define H264_WEIGHT(W,H) \
@@ -314,7 +320,13 @@ void ff_h264dsp_init(H264DSPContext *c)
     c->h264_h_loop_filter_chroma_intra= h264_h_loop_filter_chroma_intra_c;
     c->h264_loop_filter_strength= NULL;
 
+#if ARCH_ARM
     if (ARCH_ARM) ff_h264dsp_init_arm(c);
-    if (HAVE_ALTIVEC) ff_h264dsp_init_ppc(c);
+#endif	
+#if HAVE_ALTIVEC
+    if (HAVE_ALTIVEC) ff_h264dsp_init_ppc(c);	
+#endif	
+#if HAVE_MMX
     if (HAVE_MMX) ff_h264dsp_init_x86(c);
+#endif
 }

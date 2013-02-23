@@ -118,6 +118,28 @@ int ff_flv_decode_picture_header(MpegEncContext *s)
     return 0;
 }
 
+#ifdef _MSC_VER
+AVCodec flv_decoder = {
+	"flv",
+	AVMEDIA_TYPE_VIDEO,
+	CODEC_ID_FLV1,
+	sizeof(MpegEncContext),
+	ff_h263_decode_init,
+	NULL,
+	ff_h263_decode_end,
+	ff_h263_decode_frame,
+	CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1,
+	/*next*/NULL,
+	/*.flush= */ff_mpeg_flush,
+	/*supported_framerates*/NULL,	
+	/*.pix_fmts= */ff_pixfmt_list_420,
+	/*.long_name= */"Flash Video (FLV) / Sorenson Spark / Sorenson H.263",
+	/*supported_samplerates*/NULL,
+	/*sample_fmts*/NULL,
+	/*channel_layouts*/NULL,
+	/*.max_lowres= */3,	
+};
+#else
 AVCodec flv_decoder = {
     "flv",
     AVMEDIA_TYPE_VIDEO,
@@ -132,3 +154,4 @@ AVCodec flv_decoder = {
     .long_name= NULL_IF_CONFIG_SMALL("Flash Video (FLV) / Sorenson Spark / Sorenson H.263"),
     .pix_fmts= ff_pixfmt_list_420,
 };
+#endif

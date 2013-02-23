@@ -41,6 +41,13 @@
 #include <limits.h>
 #include <float.h>
 
+#ifdef MS_PORT
+#define attribute_align_arg
+#define HAVE_THREADS 0
+#define FFMPEG_CONFIGURATION ""
+#include <assert.h>
+#endif
+
 static int volatile entangled_thread_counter=0;
 int (*ff_lockmgr_cb)(void **mutex, enum AVLockOp op);
 static void *codec_mutex;
@@ -727,8 +734,10 @@ av_cold int avcodec_close(AVCodecContext *avctx)
         return -1;
     }
 
+#if HAVE_THREADS
     if (HAVE_THREADS && avctx->thread_opaque)
         avcodec_thread_free(avctx);
+#endif
     if (avctx->codec && avctx->codec->close)
         avctx->codec->close(avctx);
     avcodec_default_free_buffers(avctx);
@@ -960,8 +969,12 @@ const char *avcodec_configuration(void)
 
 const char *avcodec_license(void)
 {
+#ifdef _MSC_VER
+	return "";
+#else
 #define LICENSE_PREFIX "libavcodec license: "
     return LICENSE_PREFIX FFMPEG_LICENSE + sizeof(LICENSE_PREFIX) - 1;
+#endif
 }
 
 void avcodec_init(void)

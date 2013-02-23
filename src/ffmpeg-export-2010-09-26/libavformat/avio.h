@@ -240,6 +240,19 @@ int64_t av_url_read_seek(URLContext *h, int stream_index,
  */
 #define AVSEEK_FORCE 0x20000
 
+///*name*/NULL,
+///*url_open*/NULL,
+///*url_read*/v
+///*url_write*/NULL,
+///*url_seek*/NULL,
+///*url_close*/NULL,
+///*next*/NULL,
+///*url_read_pause*/NULL,
+///*url_read_seek*/NULL,
+///*url_get_file_handle*/NULL,
+///*priv_data_size*/0,
+///*priv_data_class*/NULL
+
 typedef struct URLProtocol {
     const char *name;
     int (*url_open)(URLContext *h, const char *url, int flags);

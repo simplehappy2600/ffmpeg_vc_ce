@@ -51,7 +51,11 @@
 #define M_SQRT2        1.41421356237309504880  /* sqrt(2) */
 #endif
 #ifndef NAN
+#if defined(_MSC_VER)
+#define NAN	0
+#else
 #define NAN            (0.0/0.0)
+#endif
 #endif
 #ifndef INFINITY
 #define INFINITY       (1.0/0.0)

@@ -48,6 +48,10 @@
 #include <sys/resource.h>
 #endif
 
+#ifdef WINCE
+#include "libavformat/os_support.h"
+#endif
+
 const char **opt_names;
 static int opt_name_count;
 AVCodecContext *avcodec_opts[AVMEDIA_TYPE_NB];
@@ -174,7 +178,13 @@ unknown_opt:
             } else if (po->flags & OPT_INT64) {
                 *po->u.int64_arg = parse_number_or_die(opt, arg, OPT_INT64, INT64_MIN, INT64_MAX);
             } else if (po->flags & OPT_FLOAT) {
-                *po->u.float_arg = parse_number_or_die(opt, arg, OPT_FLOAT, -1.0/0.0, 1.0/0.0);
+                *po->u.float_arg = parse_number_or_die(opt, arg, OPT_FLOAT, 
+#ifdef _MSC_VER
+					INT32_MIN, INT32_MAX
+#else
+					-1.0/0.0, 1.0/0.0
+#endif
+				);
             } else if (po->flags & OPT_FUNC2) {
                 if (po->u.func2_arg(opt, arg) < 0) {
                     fprintf(stderr, "%s: failed to set value '%s' for option '%s'\n", argv[0], arg, opt);
@@ -341,6 +351,7 @@ static int warned_cfg = 0;
 
 static void print_all_libs_info(FILE* outstream, int flags)
 {
+#ifndef MS_PORT
     PRINT_LIB_INFO(outstream, avutil,   AVUTIL,   flags);
     PRINT_LIB_INFO(outstream, avcore,   AVCORE,   flags);
     PRINT_LIB_INFO(outstream, avcodec,  AVCODEC,  flags);
@@ -349,10 +360,12 @@ static void print_all_libs_info(FILE* outstream, int flags)
     PRINT_LIB_INFO(outstream, avfilter, AVFILTER, flags);
     PRINT_LIB_INFO(outstream, swscale,  SWSCALE,  flags);
     PRINT_LIB_INFO(outstream, postproc, POSTPROC, flags);
+#endif
 }
 
 void show_banner(void)
 {
+#ifndef MS_PORT
     fprintf(stderr, "%s version " FFMPEG_VERSION ", Copyright (c) %d-%d the FFmpeg developers\n",
             program_name, program_birth_year, this_year);
     fprintf(stderr, "  built on %s %s with %s %s\n",
@@ -360,6 +373,7 @@ void show_banner(void)
     fprintf(stderr, "  configuration: " FFMPEG_CONFIGURATION "\n");
     print_all_libs_info(stderr, INDENT|SHOW_CONFIG);
     print_all_libs_info(stderr, INDENT|SHOW_VERSION);
+#endif
 }
 
 void show_version(void) {
@@ -610,8 +624,10 @@ void show_filters(void)
 #endif
 }
 
+
 void show_pix_fmts(void)
 {
+#ifndef MS_PORT
     enum PixelFormat pix_fmt;
 
     printf(
@@ -641,7 +657,9 @@ void show_pix_fmts(void)
                pix_desc->nb_components,
                av_get_bits_per_pixel(pix_desc));
     }
+#endif
 }
+
 
 int read_yesno(void)
 {

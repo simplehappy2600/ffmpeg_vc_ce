@@ -20,9 +20,11 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+
 #include "mpegvideo.h"
 #include "mpeg4video.h"
 #include "h263.h"
+
 
 // The defines below define the number of bits that are read at once for
 // reading vlc values. Changing these may improve speed and data cache needs
@@ -2234,6 +2236,28 @@ static av_cold int decode_init(AVCodecContext *avctx)
     return 0;
 }
 
+#ifdef _MSC_VER
+AVCodec mpeg4_decoder = {
+	"mpeg4",
+	AVMEDIA_TYPE_VIDEO,
+	CODEC_ID_MPEG4,
+	sizeof(MpegEncContext),
+	decode_init,
+	NULL,
+	ff_h263_decode_end,
+	ff_h263_decode_frame,
+	CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1 | CODEC_CAP_TRUNCATED | CODEC_CAP_DELAY,
+	/*next*/NULL,
+	/*.flush= */ff_mpeg_flush,
+	/*supported_framerates*/NULL,
+	/*pix_fmts*/ff_hwaccel_pixfmt_list_420,	
+	/*long_name*/"MPEG-4 part 2",
+	/*supported_samplerates*/NULL,
+	/*sample_fmts*/NULL,
+	/*channel_layouts*/NULL,
+	/*.max_lowres*/3,
+};
+#else
 AVCodec mpeg4_decoder = {
     "mpeg4",
     AVMEDIA_TYPE_VIDEO,
@@ -2249,6 +2273,7 @@ AVCodec mpeg4_decoder = {
     .long_name= NULL_IF_CONFIG_SMALL("MPEG-4 part 2"),
     .pix_fmts= ff_hwaccel_pixfmt_list_420,
 };
+#endif
 
 
 #if CONFIG_MPEG4_VDPAU_DECODER

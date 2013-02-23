@@ -30,6 +30,11 @@
 #include "h264pred.h"
 #include "mathops.h"
 
+#ifdef MS_PORT
+#define ARCH_ARM 0
+#define HAVE_MMX 0
+#endif
+
 static void pred4x4_vertical_c(uint8_t *src, const uint8_t *topright, int stride){
     const uint32_t a= ((uint32_t*)(src-stride))[0];
     ((uint32_t*)(src+0*stride))[0]= a;
@@ -1297,7 +1302,10 @@ void ff_h264_pred_init(H264PredContext *h, int codec_id){
     h->pred8x8_add  [ HOR_PRED8x8]= pred8x8_horizontal_add_c;
     h->pred16x16_add[VERT_PRED8x8]= pred16x16_vertical_add_c;
     h->pred16x16_add[ HOR_PRED8x8]= pred16x16_horizontal_add_c;
-
+#if ARCH_ARM
     if (ARCH_ARM) ff_h264_pred_init_arm(h, codec_id);
+#endif
+#if HAVE_MMX
     if (HAVE_MMX) ff_h264_pred_init_x86(h, codec_id);
+#endif
 }

@@ -357,7 +357,11 @@ static void v_block_filter(MpegEncContext *s, uint8_t *dst, int w, int h, int st
 }
 
 static void guess_mv(MpegEncContext *s){
+#ifdef MS_PORT
+	uint8_t *fixed = (uint8_t *)malloc(s->mb_stride * s->mb_height);
+#else
     uint8_t fixed[s->mb_stride * s->mb_height];
+#endif
 #define MV_FROZEN    3
 #define MV_CHANGED   2
 #define MV_UNCHANGED 1
@@ -405,7 +409,11 @@ static void guess_mv(MpegEncContext *s){
                 decode_mb(s, 0);
             }
         }
+#ifdef MS_PORT
+		goto exit;
+#else
         return;
+#endif
     }
 
     for(depth=0;; depth++){
@@ -615,6 +623,14 @@ score_sum+= best_score;
         }
 //        printf(":"); fflush(stdout);
     }
+
+#ifdef MS_PORT
+exit:
+	if (fixed){
+		free(fixed);
+	}
+#endif
+
 }
 
 static int is_intra_more_likely(MpegEncContext *s){
@@ -639,8 +655,10 @@ static int is_intra_more_likely(MpegEncContext *s){
     if(undamaged_count < 5) return 0; //almost all MBs damaged -> use temporal prediction
 
     //prevent dsp.sad() check, that requires access to the image
+#if CONFIG_MPEG_XVMC_DECODER
     if(CONFIG_MPEG_XVMC_DECODER && s->avctx->xvmc_acceleration && s->pict_type == FF_I_TYPE)
         return 1;
+#endif
 
     skip_amount= FFMAX(undamaged_count/50, 1); //check only upto 50 MBs
     is_intra_likely=0;
@@ -1020,9 +1038,11 @@ void ff_er_frame_end(MpegEncContext *s){
     }else
         guess_mv(s);
 
+#ifndef CONFIG_MPEG_XVMC_DECODER
     /* the filters below are not XvMC compatible, skip them */
     if(CONFIG_MPEG_XVMC_DECODER && s->avctx->xvmc_acceleration)
         goto ec_clean;
+#endif
     /* fill DC for inter blocks */
     for(mb_y=0; mb_y<s->mb_height; mb_y++){
         for(mb_x=0; mb_x<s->mb_width; mb_x++){

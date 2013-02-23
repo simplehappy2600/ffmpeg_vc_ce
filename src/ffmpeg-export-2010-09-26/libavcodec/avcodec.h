@@ -60,7 +60,12 @@
 
 #define AV_NOPTS_VALUE          INT64_C(0x8000000000000000)
 #define AV_TIME_BASE            1000000
+#if defined(_MSC_VER)
+extern AVRational AV_TIME_BASE_Q_TMP;
+#define AV_TIME_BASE_Q          AV_TIME_BASE_Q_TMP
+#else
 #define AV_TIME_BASE_Q          (AVRational){1, AV_TIME_BASE}
+#endif
 
 /**
  * Identify the syntax and semantics of the bitstream.
@@ -2728,8 +2733,27 @@ typedef struct AVCodecContext {
     int lpc_passes;
 } AVCodecContext;
 
+///*name*/NULL,
+///*type*/AVMEDIA_TYPE_UNKNOWN,
+///*id*/CODEC_ID_NONE,
+///*priv_data_size*/0,
+///*init*/NULL,
+///*encode*/NULL,
+///*close*/NULL,
+///*decode*/NULL,
+///*capabilities*/0,
+///*next*/NULL,
+///*flush*/NULL,
+///*supported_framerates*/NULL,
+///*pix_fmts*/NULL,
+///*long_name*/NULL,
+///*supported_samplerates*/NULL,
+///*sample_fmts*/NULL,
+///*channel_layouts*/NULL,
+///*max_lowres*/0
+
 /**
- * AVCodec.
+ * AVCodec. 
  */
 typedef struct AVCodec {
     /**

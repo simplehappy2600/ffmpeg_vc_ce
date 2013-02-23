@@ -26,6 +26,10 @@
 #include "internal.h"
 #include <stdarg.h>
 
+#ifdef MS_PORT
+#include "config.h"
+#endif
+
 #define IO_BUFFER_SIZE 32768
 
 /**
@@ -795,6 +799,7 @@ int64_t av_url_read_fseek(ByteIOContext *s, int stream_index,
 /* url_open_dyn_buf and url_close_dyn_buf are used in rtp.c to send a response
  * back to the server even if CONFIG_MUXERS is false. */
 #if CONFIG_MUXERS || CONFIG_NETWORK
+//#if 1
 /* buffer handling */
 int url_open_buf(ByteIOContext **s, uint8_t *buf, int buf_size, int flags)
 {

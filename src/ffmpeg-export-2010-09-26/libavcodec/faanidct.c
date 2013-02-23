@@ -20,6 +20,10 @@
  */
 #include "faanidct.h"
 
+#ifdef MS_PORT
+#include "../libavutil/libm.h"
+#endif
+
 /* To allow switching to double. */
 #define FLOAT float
 

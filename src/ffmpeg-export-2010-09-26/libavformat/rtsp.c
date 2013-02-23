@@ -25,11 +25,17 @@
 #include "libavutil/random_seed.h"
 #include "avformat.h"
 
+#if defined(_MSC_VER)
+#include <time.h>
+#else
 #include <sys/time.h>
+#endif
 #if HAVE_SYS_SELECT_H
 #include <sys/select.h>
 #endif
+#if !defined(_MSC_VER)
 #include <strings.h>
+#endif
 #include "internal.h"
 #include "network.h"
 #include "os_support.h"
@@ -2021,6 +2027,24 @@ static int rtsp_read_close(AVFormatContext *s)
     return 0;
 }
 
+#if defined(_MSC_VER)
+AVInputFormat rtsp_demuxer = {
+	"rtsp",
+	"RTSP	 format",
+	sizeof(RTSPState),
+	rtsp_probe,
+	rtsp_read_header,
+	rtsp_read_packet,
+	rtsp_read_close,
+	rtsp_read_seek,
+	NULL,
+	/*.flags = */AVFMT_NOFILE,
+	NULL,
+	0,
+	/*.read_play = */rtsp_read_play,
+	/*.read_pause = */rtsp_read_pause,
+};
+#else
 AVInputFormat rtsp_demuxer = {
     "rtsp",
     NULL_IF_CONFIG_SMALL("RTSP input format"),
@@ -2034,6 +2058,7 @@ AVInputFormat rtsp_demuxer = {
     .read_play = rtsp_read_play,
     .read_pause = rtsp_read_pause,
 };
+#endif
 #endif
 
 static int sdp_probe(AVProbeData *p1)
@@ -2113,7 +2138,11 @@ static int sdp_read_close(AVFormatContext *s)
 
 AVInputFormat sdp_demuxer = {
     "sdp",
+#if defined(_MSC_VER)
+	"SDP",
+#else
     NULL_IF_CONFIG_SMALL("SDP"),
+#endif
     sizeof(RTSPState),
     sdp_probe,
     sdp_read_header,

@@ -26,9 +26,13 @@
 #include "libavutil/avstring.h"
 #include "riff.h"
 #include "audiointerleave.h"
+#ifndef _MSC_VER
 #include <sys/time.h>
+#endif
 #include <time.h>
+#ifndef _MSC_VER
 #include <strings.h>
+#endif
 #include <stdarg.h>
 #if CONFIG_NETWORK
 #include "network.h"
@@ -36,6 +40,12 @@
 
 #undef NDEBUG
 #include <assert.h>
+
+#ifdef MS_PORT
+#include <WTYPES.H>
+#include <WINBASE.H>
+#define lrintf(a) ((int)(0.5 + (a)))
+#endif
 
 /**
  * @file
@@ -47,15 +57,21 @@ unsigned avformat_version(void)
     return LIBAVFORMAT_VERSION_INT;
 }
 
+#if !defined(_MSC_VER)
 const char *avformat_configuration(void)
 {
     return FFMPEG_CONFIGURATION;
 }
+#endif
 
 const char *avformat_license(void)
 {
+#if defined(_MSC_VER)
+	return "";
+#else
 #define LICENSE_PREFIX "libavformat license: "
     return LICENSE_PREFIX FFMPEG_LICENSE + sizeof(LICENSE_PREFIX) - 1;
+#endif
 }
 
 /* fraction handling */
@@ -1137,18 +1153,20 @@ static int av_read_frame_internal(AVFormatContext *s, AVPacket *pkt)
 //                return -1;
             }
 
-            if(s->debug & FF_FDEBUG_TS)
+			if(s->debug & FF_FDEBUG_TS){
                 av_log(s, AV_LOG_DEBUG, "av_read_packet stream=%d, pts=%"PRId64", dts=%"PRId64", size=%d, duration=%d, flags=%d\n",
                     st->cur_pkt.stream_index,
                     st->cur_pkt.pts,
                     st->cur_pkt.dts,
                     st->cur_pkt.size,
                     st->cur_pkt.duration,
-                    st->cur_pkt.flags);
+                    st->cur_pkt.flags);          
+			}
 
             s->cur_st = st;
-            st->cur_ptr = st->cur_pkt.data;
-            st->cur_len = st->cur_pkt.size;
+			st->cur_ptr = st->cur_pkt.data;
+            st->cur_len = st->cur_pkt.size;			
+
             if (st->need_parsing && !st->parser && !(s->flags & AVFMT_FLAG_NOPARSE)) {
                 st->parser = av_parser_init(st->codec->codec_id);
                 if (!st->parser) {
@@ -1166,7 +1184,7 @@ static int av_read_frame_internal(AVFormatContext *s, AVPacket *pkt)
             }
         }
     }
-    if(s->debug & FF_FDEBUG_TS)
+	if(s->debug & FF_FDEBUG_TS){
         av_log(s, AV_LOG_DEBUG, "av_read_frame_internal stream=%d, pts=%"PRId64", dts=%"PRId64", size=%d, duration=%d, flags=%d\n",
             pkt->stream_index,
             pkt->pts,
@@ -1174,6 +1192,7 @@ static int av_read_frame_internal(AVFormatContext *s, AVPacket *pkt)
             pkt->size,
             pkt->duration,
             pkt->flags);
+	}
 
     return 0;
 }
@@ -1418,7 +1437,9 @@ int av_index_search_timestamp(AVStream *st, int64_t wanted_timestamp,
     return  m;
 }
 
+#ifndef _MSC_VER
 #define DEBUG_SEEK
+#endif
 
 int av_seek_frame_binary(AVFormatContext *s, int stream_index, int64_t target_ts, int flags){
     AVInputFormat *avif= s->iformat;
@@ -2132,8 +2153,16 @@ static void compute_chapters_end(AVFormatContext *s)
 
 #define MAX_STD_TIMEBASES (60*12+5)
 static int get_std_framerate(int i){
-    if(i<60*12) return i*1001;
-    else        return ((const int[]){24,30,60,12,15})[i-60*12]*1000*12;
+    if(i<60*12) 
+		return i*1001;
+	else{       
+#ifdef _MSC_VER
+		const int framerate_temp[5] = {24,30,60,12,15};
+		return framerate_temp[i-60*12]*1000*12;
+#else
+		return ((const int[]){24,30,60,12,15})[i-60*12]*1000*12;
+#endif
+	}
 }
 
 /*
@@ -2532,9 +2561,12 @@ AVStream *av_new_stream(AVFormatContext *s, int id)
     for(i=0; i<MAX_REORDER_DELAY+1; i++)
         st->pts_buffer[i]= AV_NOPTS_VALUE;
     st->reference_dts = AV_NOPTS_VALUE;
-
+#ifdef _MSC_VER
+	st->sample_aspect_ratio.num = 0;
+	st->sample_aspect_ratio.den = 1;
+#else
     st->sample_aspect_ratio = (AVRational){0,1};
-
+#endif
     s->streams[s->nb_streams++] = st;
     return st;
 }
@@ -3199,9 +3231,13 @@ int parse_frame_rate(int *frame_rate_num, int *frame_rate_den, const char *arg)
 
 int64_t av_gettime(void)
 {
-    struct timeval tv;
+#ifdef _MSC_VER
+	return GetTickCount() * 1000;
+#else
+	struct timeval tv;
     gettimeofday(&tv,NULL);
     return (int64_t)tv.tv_sec * 1000000 + tv.tv_usec;
+#endif
 }
 
 uint64_t ff_ntp_time(void)

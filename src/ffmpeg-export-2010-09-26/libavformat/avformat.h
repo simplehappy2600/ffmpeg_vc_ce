@@ -325,6 +325,27 @@ typedef struct AVOutputFormat {
     struct AVOutputFormat *next;
 } AVOutputFormat;
 
+///*name          */NULL,   
+///*long_name     */NULL,
+///*priv_data_size*/0,
+///*read_probe    */NULL,	
+///*read_header   */NULL,
+///*read_packet   */NULL,
+///*read_close    */NULL,
+//#if LIBAVFORMAT_VERSION_MAJOR < 53
+///*read_seek     */NULL, 
+//#endif
+///*read_timestamp*/NULL,    
+///*flags         */0,
+///*extensions    */NULL,
+///*value         */0,    
+///*read_play     */NULL,
+///*read_pause    */NULL,
+///*codec_tag     */NULL,
+///*read_seek2    */NULL,    
+///*metadata_conv */NULL,
+///*next          */NULL,
+
 typedef struct AVInputFormat {
     /**
      * A comma separated list of short names for the format. New names
@@ -653,7 +674,11 @@ typedef struct AVChapter {
 } AVChapter;
 
 #if FF_API_MAX_STREAMS
+#ifdef WINCE
+#define MAX_STREAMS 4
+#else
 #define MAX_STREAMS 20
+#endif
 #endif
 
 /**

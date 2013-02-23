@@ -37,6 +37,21 @@
 #include "attributes.h"
 #include "libavutil/avconfig.h"
 
+#ifndef INT64_C 
+#define INT64_C(c) (c ## LL) 
+#define UINT64_C(c) (c ## ULL) 
+#endif
+
+#if defined(_MSC_VER) && !defined(__cplusplus)
+#   define inline __inline
+#endif
+
+#if defined(_MSC_VER)
+#define snprintf _snprintf
+#define vsnprintf _vsnprintf
+#endif
+
+
 #if AV_HAVE_BIGENDIAN
 #   define AV_NE(be, le) (be)
 #else
@@ -367,4 +382,42 @@ static inline av_const int av_popcount_c(uint32_t x)
 #endif
 #ifndef av_popcount
 #   define av_popcount      av_popcount_c
+#endif
+
+#ifdef MS_PORT
+#ifndef PRIx64
+#define PRIx64 "llx"
+#endif
+#ifndef SCNx64
+#define SCNx64 "llx"
+#endif
+#ifndef PRId64
+#define PRId64 "lld"
+#endif
+#ifndef SCNd64
+#define SCNd64 "lld"
+#endif
+#ifndef PRIu64
+#define PRIu64 "llu"
+#endif
+#ifndef PRIxPTR
+#define PRIxPTR  PRIx64
+#endif
+#endif
+
+#ifdef MS_PORT
+#ifdef DEBUG
+#    define dprintf(pctx, ...) av_log(pctx, AV_LOG_DEBUG, __VA_ARGS__)
+#else
+#    define dprintf(pctx, ...)
+#endif
+#endif
+
+#ifdef _MSC_VER
+#define atoll    _atoi64
+#ifdef WINCE
+#define strtoll  strtol
+#else
+#define strtoll  _strtoi64
+#endif
 #endif

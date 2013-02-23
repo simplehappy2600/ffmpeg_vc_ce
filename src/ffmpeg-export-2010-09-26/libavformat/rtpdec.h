@@ -113,6 +113,15 @@ typedef int (*DynamicPayloadPacketHandlerProc) (AVFormatContext *ctx,
                                                 const uint8_t * buf,
                                                 int len, int flags);
 
+///*enc_name        */NULL,
+///*codec_type      */AVMEDIA_TYPE_UNKNOWN,
+///*codec_id        */CODEC_ID_NONE
+///*parse_sdp_a_line*/NULL,                           
+///*open            */NULL,
+///*close           */NULL,
+///*parse_packet    */NULL,
+///*next            */NULL
+
 struct RTPDynamicProtocolHandler_s {
     // fields from AVRtpDynamicPayloadType_s
     const char enc_name[50];    /* XXX: still why 50 ? ;-) */

@@ -45,6 +45,26 @@
 #include "libavutil/bswap.h"
 #include "libavutil/pixdesc.h"
 
+#ifdef MS_PORT
+#define FF_ALLOC_OR_GOTO(ctx, p, size, label)\
+{\
+	p = av_malloc(size);\
+	if (p == NULL && (size) != 0) {\
+	av_log(ctx, AV_LOG_ERROR, "Cannot allocate memory.\n");\
+	goto label;\
+	}\
+}
+
+#define FF_ALLOCZ_OR_GOTO(ctx, p, size, label)\
+{\
+	p = av_mallocz(size);\
+	if (p == NULL && (size) != 0) {\
+	av_log(ctx, AV_LOG_ERROR, "Cannot allocate memory.\n");\
+	goto label;\
+	}\
+}
+#endif
+
 unsigned swscale_version(void)
 {
     return LIBSWSCALE_VERSION_INT;

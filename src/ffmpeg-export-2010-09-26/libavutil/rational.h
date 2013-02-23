@@ -39,6 +39,16 @@ typedef struct AVRational{
     int den; ///< denominator
 } AVRational;
 
+#ifdef _MSC_VER
+static inline AVRational CtmpAVRational(int num, int den)
+{
+	AVRational r;
+	r.num = num;
+	r.den = den;
+	return r;
+}
+#endif
+
 /**
  * Compare two rationals.
  * @param a first rational

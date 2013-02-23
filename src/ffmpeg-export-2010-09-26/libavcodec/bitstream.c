@@ -32,6 +32,10 @@
 #include "get_bits.h"
 #include "put_bits.h"
 
+#ifdef MS_PORT
+#define CONFIG_SMALL 0
+#endif
+
 const uint8_t ff_log2_run[32]={
  0, 0, 0, 0, 1, 1, 1, 1,
  2, 2, 2, 2, 3, 3, 3, 3,

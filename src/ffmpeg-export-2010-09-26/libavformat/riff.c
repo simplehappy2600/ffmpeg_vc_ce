@@ -24,6 +24,10 @@
 #include "riff.h"
 #include "libavcodec/bytestream.h"
 
+#ifdef MS_PORT
+#include "config.h"
+#endif
+
 /* Note: when encoding, the first matching tag is used, so order is
    important if multiple tags possible for a given codec. */
 const AVCodecTag ff_codec_bmp_tags[] = {

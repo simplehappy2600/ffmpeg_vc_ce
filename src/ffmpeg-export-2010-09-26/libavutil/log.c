@@ -29,13 +29,17 @@
 #include "avutil.h"
 #include "log.h"
 
+#ifdef WINCE
+#include "common.h"
+#endif
+
 #if LIBAVUTIL_VERSION_MAJOR > 50
 static
 #endif
 int av_log_level = AV_LOG_INFO;
 static int flags;
 
-#if defined(_WIN32) && !defined(__MINGW32CE__)
+#if defined(_WIN32) && !defined(__MINGW32CE__) && !defined(WINCE)
 #include <windows.h>
 static const uint8_t color[] = {12,12,12,14,7,7,7};
 static int16_t background, attr_orig;
@@ -52,7 +56,7 @@ static int use_color=-1;
 #undef fprintf
 static void colored_fputs(int level, const char *str){
     if(use_color<0){
-#if defined(_WIN32) && !defined(__MINGW32CE__)
+#if defined(_WIN32) && !defined(__MINGW32CE__) && !defined(WINCE)
         CONSOLE_SCREEN_BUFFER_INFO con_info;
         con = GetStdHandle(STD_ERROR_HANDLE);
         use_color = (con != INVALID_HANDLE_VALUE) && !getenv("NO_COLOR");

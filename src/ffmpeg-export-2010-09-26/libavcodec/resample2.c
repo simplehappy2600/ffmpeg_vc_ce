@@ -28,6 +28,14 @@
 #include "avcodec.h"
 #include "dsputil.h"
 
+#ifdef _MSC_VER
+#include "assert.h"
+static av_always_inline av_const long int lrintf(float x)
+{
+	return (int)(rint(x));
+}
+#endif
+
 #ifndef CONFIG_RESAMPLE_HP
 #define FILTER_SHIFT 15
 

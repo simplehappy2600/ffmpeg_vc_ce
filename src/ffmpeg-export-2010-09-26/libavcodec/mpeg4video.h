@@ -28,6 +28,10 @@
 #include "mpegvideo.h"
 #include "rl.h"
 
+#ifdef MS_PORT
+#define FASTDIV(a,b) ((a) / (b))
+#endif
+
 // shapes
 #define RECT_SHAPE       0
 #define BIN_SHAPE        1

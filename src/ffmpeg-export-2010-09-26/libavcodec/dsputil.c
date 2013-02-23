@@ -4179,12 +4179,14 @@ av_cold void dsputil_init(DSPContext* c, AVCodecContext *avctx)
             c->idct_add= ff_jref_idct_add;
             c->idct    = j_rev_dct;
             c->idct_permutation_type= FF_LIBMPEG2_IDCT_PERM;
+#if (CONFIG_VP3_DECODER || CONFIG_VP5_DECODER || CONFIG_VP6_DECODER ) 
         }else if((CONFIG_VP3_DECODER || CONFIG_VP5_DECODER || CONFIG_VP6_DECODER ) &&
                 avctx->idct_algo==FF_IDCT_VP3){
             c->idct_put= ff_vp3_idct_put_c;
             c->idct_add= ff_vp3_idct_add_c;
             c->idct    = ff_vp3_idct_c;
             c->idct_permutation_type= FF_NO_IDCT_PERM;
+#endif
         }else if(avctx->idct_algo==FF_IDCT_WMV2){
             c->idct_put= ff_wmv2_idct_put_c;
             c->idct_add= ff_wmv2_idct_add_c;
@@ -4195,14 +4197,18 @@ av_cold void dsputil_init(DSPContext* c, AVCodecContext *avctx)
             c->idct_add= ff_faanidct_add;
             c->idct    = ff_faanidct;
             c->idct_permutation_type= FF_NO_IDCT_PERM;
+#if CONFIG_EATGQ_DECODER
         }else if(CONFIG_EATGQ_DECODER && avctx->idct_algo==FF_IDCT_EA) {
             c->idct_put= ff_ea_idct_put_c;
             c->idct_permutation_type= FF_NO_IDCT_PERM;
+#endif
+#if CONFIG_BINK_DECODER
         }else if(CONFIG_BINK_DECODER && avctx->idct_algo==FF_IDCT_BINK) {
             c->idct     = ff_bink_idct_c;
             c->idct_add = ff_bink_idct_add_c;
             c->idct_put = ff_bink_idct_put_c;
             c->idct_permutation_type = FF_NO_IDCT_PERM;
+#endif
         }else{ //accurate/default
             c->idct_put= ff_simple_idct_put;
             c->idct_add= ff_simple_idct_add;
@@ -4415,12 +4421,13 @@ av_cold void dsputil_init(DSPContext* c, AVCodecContext *avctx)
         c->h263_v_loop_filter= h263_v_loop_filter_c;
     }
 
+#if CONFIG_VP3_DECODER
     if (CONFIG_VP3_DECODER) {
         c->vp3_h_loop_filter= ff_vp3_h_loop_filter_c;
         c->vp3_v_loop_filter= ff_vp3_v_loop_filter_c;
         c->vp3_idct_dc_add= ff_vp3_idct_dc_add_c;
     }
-
+#endif
     c->h261_loop_filter= h261_loop_filter_c;
 
     c->try_8x8basis= try_8x8basis_c;
@@ -4464,17 +4471,33 @@ av_cold void dsputil_init(DSPContext* c, AVCodecContext *avctx)
 
     memset(c->put_2tap_qpel_pixels_tab, 0, sizeof(c->put_2tap_qpel_pixels_tab));
     memset(c->avg_2tap_qpel_pixels_tab, 0, sizeof(c->avg_2tap_qpel_pixels_tab));
-
+#if HAVE_MMX
     if (HAVE_MMX)        dsputil_init_mmx   (c, avctx);
+#endif
+#if ARCH_ARM
     if (ARCH_ARM)        dsputil_init_arm   (c, avctx);
+#endif
+#if CONFIG_MLIB
     if (CONFIG_MLIB)     dsputil_init_mlib  (c, avctx);
+#endif
+#if HAVE_VIS
     if (HAVE_VIS)        dsputil_init_vis   (c, avctx);
+#endif
+#if ARCH_ALPHA
     if (ARCH_ALPHA)      dsputil_init_alpha (c, avctx);
+#endif
+#if ARCH_PPC
     if (ARCH_PPC)        dsputil_init_ppc   (c, avctx);
+#endif
+#if HAVE_MMI
     if (HAVE_MMI)        dsputil_init_mmi   (c, avctx);
+#endif
+#if ARCH_SH4
     if (ARCH_SH4)        dsputil_init_sh4   (c, avctx);
+#endif
+#if ARCH_BFIN
     if (ARCH_BFIN)       dsputil_init_bfin  (c, avctx);
-
+#endif
     for(i=0; i<64; i++){
         if(!c->put_2tap_qpel_pixels_tab[0][i])
             c->put_2tap_qpel_pixels_tab[0][i]= c->put_h264_qpel_pixels_tab[0][i];
